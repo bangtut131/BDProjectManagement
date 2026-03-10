@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Clock,
   MessageSquare,
-  Calendar
+  Calendar,
+  Menu
 } from 'lucide-react';
 
 import { INITIAL_ROLES, STATUS_CONFIG, PRIORITY_CONFIG } from './data/constants';
@@ -43,9 +44,9 @@ import { supabase } from './lib/supabaseClient';
 
 import logoBd from './assets/logo_bd.png';
 
-const NavItem = ({ id, icon: Icon, label, activeView, setActiveView }) => (
+const NavItem = ({ id, icon: Icon, label, activeView, setActiveView, onNavigate }) => (
   <button
-    onClick={() => setActiveView(id)}
+    onClick={() => { setActiveView(id); if (onNavigate) onNavigate(); }}
     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 
       ${activeView === id
         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
@@ -90,6 +91,7 @@ const App = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('general'); // Added for tab remote control
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
   // Helper for Direct REST Fetch (Bypassing SDK)
   const fetchRest = async (table, queryParams = 'select=*') => {
@@ -934,8 +936,16 @@ const App = () => {
   return (
     <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-white transition-colors duration-300 ${darkMode ? 'dark' : ''}`}>
 
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-100/50 dark:bg-slate-900/50 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl p-4 hidden md:flex flex-col z-20">
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-slate-100/95 dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl p-4 flex flex-col z-40 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="flex flex-col items-center gap-3 px-2 mb-8 mt-2 text-center">
           <img src={logoBd} alt="BD Project Management" className="w-full max-w-[180px] object-contain" />
           <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 uppercase">
@@ -983,14 +993,14 @@ const App = () => {
         </div>
 
         <nav className="space-y-1 flex-1">
-          <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" activeView={activeView} setActiveView={setActiveView} />
-          <NavItem id="overview" icon={Info} label="Overview & Info" activeView={activeView} setActiveView={setActiveView} />
-          <NavItem id="timeline" icon={BarChart3} label="Timeline & Jadwal" activeView={activeView} setActiveView={setActiveView} />
-          <NavItem id="calendar" icon={CalendarDays} label="Kalender" activeView={activeView} setActiveView={setActiveView} />
-          <NavItem id="kanban" icon={KanbanSquare} label="Kanban Board" activeView={activeView} setActiveView={setActiveView} />
-          <NavItem id="list" icon={ListTodo} label="Daftar Tugas" activeView={activeView} setActiveView={setActiveView} />
+          <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
+          <NavItem id="overview" icon={Info} label="Overview & Info" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
+          <NavItem id="timeline" icon={BarChart3} label="Timeline & Jadwal" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
+          <NavItem id="calendar" icon={CalendarDays} label="Kalender" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
+          <NavItem id="kanban" icon={KanbanSquare} label="Kanban Board" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
+          <NavItem id="list" icon={ListTodo} label="Daftar Tugas" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
           <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-            <NavItem id="team" icon={Users} label="Tim & Anggota" activeView={activeView} setActiveView={setActiveView} />
+            <NavItem id="team" icon={Users} label="Tim & Anggota" activeView={activeView} setActiveView={setActiveView} onNavigate={() => setSidebarOpen(false)} />
           </div>
         </nav>
 
@@ -1025,9 +1035,15 @@ const App = () => {
       <main className="md:ml-64 h-screen flex flex-col overflow-hidden">
         {/* Header */}
         {/* Header */}
-        <header className="h-16 px-8 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-[60] flex items-center justify-between">
-          <div className="md:hidden flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">G</div>
+        <header className="h-16 px-4 md:px-8 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-[20] flex items-center justify-between">
+          <div className="md:hidden flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+            >
+              <Menu size={22} />
+            </button>
+            <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">BD PM</span>
           </div>
 
           <div className="hidden md:block">
@@ -1094,7 +1110,7 @@ const App = () => {
         </header>
 
         {/* Dynamic View Content */}
-        <div className={`flex-1 p-8 ${activeView === 'timeline' || activeView === 'kanban' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 p-4 md:p-8 pb-24 md:pb-8 ${activeView === 'timeline' || activeView === 'kanban' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
           {activeView === 'dashboard' && (
             <DashboardView
               projects={projects}
@@ -1196,11 +1212,34 @@ const App = () => {
       {userPermissions.canManageTasks && (
         <button
           onClick={openAddModal}
-          className="fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-500/40 flex items-center justify-center transition hover:scale-110 z-30"
+          className="fixed bottom-24 md:bottom-8 right-6 md:right-8 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-500/40 flex items-center justify-center transition hover:scale-110 z-30"
         >
           <Plus size={24} />
         </button>
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-30 flex items-center justify-around px-2 py-2 safe-area-pb">
+        {[
+          { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
+          { id: 'kanban', icon: KanbanSquare, label: 'Kanban' },
+          { id: 'list', icon: ListTodo, label: 'Tugas' },
+          { id: 'team', icon: Users, label: 'Tim' },
+        ].map(item => (
+          <button
+            key={item.id}
+            onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-[60px] ${
+              activeView === item.id
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : 'text-slate-400 dark:text-slate-500'
+            }`}
+          >
+            <item.icon size={20} />
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* Modals */}
       <ProjectModal
@@ -1281,13 +1320,13 @@ const App = () => {
 
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-xl z-50 animate-fade-in-up flex items-center gap-3
+        <div className={`fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-xl z-50 animate-fade-in-up flex items-center gap-3
           ${notification.includes('Gagal') || notification.includes('Error')
             ? 'bg-red-500 text-white'
             : 'bg-slate-800 text-white'
           }`}
         >
-          <span>{notification}</span>
+          <span className="text-sm">{notification}</span>
           <button
             onClick={() => setNotification(null)}
             className="p-1 rounded-full hover:bg-white/20 transition"
