@@ -103,7 +103,7 @@ const App = () => {
     if (localSession) {
       try {
         const session = JSON.parse(localSession);
-        if (session?.access_token) token = session.access_token;
+        if (session?.access_token && session.access_token !== 'mock-admin-token') token = session.access_token;
       } catch (e) { /* ignore */ }
     }
 
@@ -132,7 +132,7 @@ const App = () => {
     if (localSession) {
       try {
         const session = JSON.parse(localSession);
-        if (session?.access_token) token = session.access_token;
+        if (session?.access_token && session.access_token !== 'mock-admin-token') token = session.access_token;
       } catch (e) { /* ignore */ }
     }
 
