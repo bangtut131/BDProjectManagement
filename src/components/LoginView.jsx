@@ -41,8 +41,8 @@ export const LoginView = ({ onLogin }) => {
         // 1. ALWAYS CLEAR OLD SESSION FIRST
         clearSession();
 
-        // 2. ADMIN BACKDOOR (Emergency Access)
-        if (username === 'admin' && password === 'admin') {
+        // 2. ADMIN BACKDOOR (Emergency Access) - works from both normal field and Need Help mode
+        if ((username === 'admin' || email === 'admin' || email === 'admin@bd.com') && password === 'admin') {
             setTimeout(() => {
                 const adminUser = {
                     id: 'admin-master',
