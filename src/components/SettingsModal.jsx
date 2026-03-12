@@ -15,7 +15,7 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
 
     // User Management State
     const [isAddingUser, setIsAddingUser] = useState(false);
-    const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Member', status: 'active' });
+    const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Project Manager', status: 'active' });
 
     // Role Management State
     const [editingRoles, setEditingRoles] = useState([]);
@@ -80,14 +80,19 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
         const cleanUsername = newUser.email.trim().replace(/\s+/g, '').toLowerCase();
         const finalEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@bd.com`;
 
+        // Ensure role is valid (prevents the bug where default invalid 'Member' state silently sets role to Developer)
+        const isValidRole = roles.find(r => r.name === newUser.role);
+        const finalRole = isValidRole ? newUser.role : (roles.length > 0 ? roles[0].name : 'Project Manager');
+
         onAddUser({
             ...newUser,
+            role: finalRole,
             email: finalEmail,
             avatar: null, // Default
             color: 'bg-indigo-500' // Default
         });
         setIsAddingUser(false);
-        setNewUser({ name: '', email: '', role: 'Member', status: 'active' });
+        setNewUser({ name: '', email: '', role: 'Project Manager', status: 'active' });
     };
 
     // --- Role Handlers ---
