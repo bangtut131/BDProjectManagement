@@ -40,7 +40,7 @@ FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE profiles.id = auth.uid() 
-      AND (profiles.role_id = 1 OR profiles.role = 'Project Manager')
+      AND profiles.role_id = 1
     )
   )
 );
@@ -58,7 +58,7 @@ FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE profiles.id = auth.uid() 
-      AND (profiles.role_id = 1 OR profiles.role = 'Project Manager')
+      AND profiles.role_id = 1
     )
   )
 );
@@ -70,7 +70,7 @@ FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE profiles.id = auth.uid() 
-      AND (profiles.role_id = 1 OR profiles.role = 'Project Manager')
+      AND profiles.role_id = 1
     )
   )
 );
