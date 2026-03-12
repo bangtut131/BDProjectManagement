@@ -549,7 +549,9 @@ const App = () => {
         end_date: projectData.endDate,
         client: projectData.client,
         budget: projectData.budget,
-        cover_image: projectData.coverImage
+        cover_image: projectData.coverImage,
+        is_private: projectData.isPrivate || false,
+        assignees: projectData.assignees || []
       };
 
       const projectResult = await mutateRest('projects', 'POST', pPayload);
@@ -1290,6 +1292,7 @@ const App = () => {
         isOpen={isProjectModalOpen}
         onClose={() => setIsProjectModalOpen(false)}
         onSave={handleSaveProject}
+        users={users}
       />
 
       <TaskModal

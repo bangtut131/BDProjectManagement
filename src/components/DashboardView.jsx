@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, BarChart3, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, BarChart3, CalendarDays, Lock } from 'lucide-react';
 import { Card } from './Card';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../data/constants';
 import { formatDate } from '../lib/utils';
@@ -128,7 +128,14 @@ export const DashboardView = ({ tasks, projects, selectedProjectId }) => {
                         {projects.map(p => (
                             <div key={p.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-700">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-medium text-slate-800 dark:text-slate-200">{p.name}</h4>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-medium text-slate-800 dark:text-slate-200">{p.name}</h4>
+                                        {p.is_private && (
+                                            <div className="flex items-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800" title="Proyek Private">
+                                                <Lock size={10} className="mr-1" /> Private
+                                            </div>
+                                        )}
+                                    </div>
                                     <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Active</span>
                                 </div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-2">

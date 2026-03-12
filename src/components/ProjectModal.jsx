@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Users, Lock, Check } from 'lucide-react';
 
-export const ProjectModal = ({ isOpen, onClose, onSave }) => {
+export const ProjectModal = ({ isOpen, onClose, onSave, users = [] }) => {
     const [formData, setFormData] = useState({
         name: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
         description: '',
-        client: ''
+        client: '',
+        isPrivate: false,
+        assignees: [] // Array of user IDs
     });
 
     useEffect(() => {
@@ -17,7 +19,9 @@ export const ProjectModal = ({ isOpen, onClose, onSave }) => {
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
                 description: '',
-                client: ''
+                client: '',
+                isPrivate: false,
+                assignees: []
             });
         }
     }, [isOpen]);
@@ -81,6 +85,71 @@ export const ProjectModal = ({ isOpen, onClose, onSave }) => {
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
                         <AlertCircle size={14} className="mt-0.5 shrink-0" />
                         <p>Project baru akan otomatis dibuatkan Sub-Project "General" agar Anda bisa langsung menambahkan tugas.</p>
+                    </div>
+
+                    {/* Privacy & Assignment Section */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Visibilitas & Penugasan Project</label>
+                        
+                        <div className="flex gap-4 mb-4">
+                            <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition ${!formData.isPrivate ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'}`}>
+                                <input 
+                                    type="radio" 
+                                    name="visibility" 
+                                    className="hidden" 
+                                    checked={!formData.isPrivate} 
+                                    onChange={() => setFormData({ ...formData, isPrivate: false, assignees: [] })}
+                                />
+                                <Users size={18} />
+                                <span className="text-sm font-medium">Semua Orang</span>
+                            </label>
+                            
+                            <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition ${formData.isPrivate ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'}`}>
+                                <input 
+                                    type="radio" 
+                                    name="visibility" 
+                                    className="hidden" 
+                                    checked={formData.isPrivate} 
+                                    onChange={() => setFormData({ ...formData, isPrivate: true })}
+                                />
+                                <Lock size={18} />
+                                <span className="text-sm font-medium">Khusus Tim Tertentu</span>
+                            </label>
+                        </div>
+
+                        {formData.isPrivate && (
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3 max-h-48 overflow-y-auto space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <p className="text-xs text-slate-500 mb-2 font-medium px-1">Pilih anggota yang diizinkan melihat project ini:</p>
+                                {users.filter(u => u.status === 'active').map(user => {
+                                    const isSelected = formData.assignees.includes(user.id);
+                                    return (
+                                        <label key={user.id} className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition hover:bg-white dark:hover:bg-slate-800 border ${isSelected ? 'border-indigo-300 bg-white dark:border-indigo-700' : 'border-transparent'}`}>
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
+                                                {isSelected && <Check size={14} className="text-white" />}
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="hidden"
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        const newAssignees = e.target.checked 
+                                                            ? [...formData.assignees, user.id]
+                                                            : formData.assignees.filter(id => id !== user.id);
+                                                        setFormData({ ...formData, assignees: newAssignees });
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{user.name}</p>
+                                                <p className="text-xs text-slate-500 truncate">{user.role}</p>
+                                            </div>
+                                        </label>
+                                    );
+                                })}
+                                {users.length === 0 && (
+                                    <p className="text-sm text-center text-slate-500 py-4">Belum ada anggota tim aktif.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

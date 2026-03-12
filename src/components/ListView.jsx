@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'; // Added Hooks
-import { Search, Layers, MoreVertical, Trash2, GripVertical, ChevronDown, ChevronRight, Briefcase } from 'lucide-react'; // Added Icons
+import { Search, Layers, MoreVertical, Trash2, GripVertical, ChevronDown, ChevronRight, Briefcase, Lock } from 'lucide-react'; // Added Icons
 import { Card } from './Card';
 import { Badge } from './Badge';
 import { Avatar } from './Avatar';
@@ -171,8 +171,13 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
                                 <div className="p-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400">
                                     <Briefcase size={16} />
                                 </div>
-                                <h3 className="flex-1 font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wide">
+                                <h3 className="flex-1 font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wide flex items-center gap-2">
                                     {project.name}
+                                    {project.is_private && (
+                                        <div className="flex items-center text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800" title="Proyek Private">
+                                            <Lock size={10} className="mr-1" /> Private
+                                        </div>
+                                    )}
                                     <span className="ml-2 text-xs font-normal text-slate-500 lowercase normal-case bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
                                         {projectTasks.length} Tugas
                                     </span>
