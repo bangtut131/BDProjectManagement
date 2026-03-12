@@ -1236,7 +1236,7 @@ const App = () => {
             <TeamView
               users={users}
               roles={roles}
-              onAddUser={() => { setSettingsInitialTab('users'); setIsSettingsModalOpen(true); }}
+              onAddUser={handleAddUser}
               onManageRoles={() => { setSettingsInitialTab('roles'); setIsSettingsModalOpen(true); }}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
