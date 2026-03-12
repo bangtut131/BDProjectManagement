@@ -424,15 +424,19 @@ const App = () => {
       const foundRole = roles.find(r => r.name === userData.role) || roles.find(r => r.name === 'Member');
       const roleId = foundRole ? foundRole.id : 2;
 
+      // Auto-convert username to email format if needed
+      const cleanUsername = (userData.email || '').trim().replace(/\s+/g, '').toLowerCase();
+      const finalEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@bd.com`;
+
       // 1. Sign up the user via standard Supabase Auth
       // This ensures all auth.users and auth.identities records are created properly
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: userData.email,
+        email: finalEmail,
         password: userData.password,
         options: {
           data: {
             name: userData.name,
-            username: userData.email.split('@')[0]
+            username: cleanUsername
           }
         }
       });
