@@ -268,6 +268,15 @@ BEGIN
         FALSE
     ) RETURNING id INTO new_user_id;
 
+    -- CRITICAL FIX: Supabase Auth requires an identity to exist for login (grant_type=password)
+    INSERT INTO auth.identities (
+        provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+        new_user_id::text, new_user_id,
+        jsonb_build_object('sub', new_user_id::text, 'email', email),
+        'email', now(), now(), now()
+    );
+
     INSERT INTO public.profiles (id, name, role_id, status, color, avatar)
     VALUES (new_user_id, name, role_id_val, 'active', 'bg-indigo-500', NULL)
     ON CONFLICT (id) DO UPDATE
