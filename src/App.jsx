@@ -421,19 +421,52 @@ const App = () => {
     try {
       if (!userData.password) throw new Error('Password wajib diisi untuk user baru via Admin.');
 
-      const payload = {
+      const foundRole = roles.find(r => r.name === userData.role) || roles.find(r => r.name === 'Member');
+      const roleId = foundRole ? foundRole.id : 2;
+
+      // 1. Sign up the user via standard Supabase Auth
+      // This ensures all auth.users and auth.identities records are created properly
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            username: userData.email.split('@')[0]
+          }
+        }
+      });
+
+      if (signUpError) throw new Error(`Auth Error: ${signUpError.message}`);
+      if (!authData.user) throw new Error('Gagal mendapatkan data user setelah registrasi.');
+
+      const newUserId = authData.user.id;
+
+      // 2. The trigger `handle_new_user` will auto-create a profile with status 'pending'.
+      // Wait a moment for the trigger to finish.
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. Automatically approve and set the role for this new user via REST
+      const profilePayload = {
         name: userData.name,
-        role_name: userData.role || 'Member'
+        role_id: roleId,
+        status: 'active'
       };
 
-      // Call RPC function
-      const result = await mutateRest('rpc/create_user_command', 'POST', payload);
-      // Result is the JSONB returned by function
+      await mutateRest('profiles', 'PATCH', profilePayload, `?id=eq.${newUserId}`);
+
+      const newUserObj = {
+        id: newUserId,
+        email: userData.email,
+        name: userData.name,
+        role: foundRole ? foundRole.name : 'Member',
+        status: 'active',
+        avatar: null,
+        color: 'bg-indigo-500'
+      };
 
       // Refresh list
-      setUsers([...users, { ...result, role: result.role, id: result.id }]);
+      setUsers([...users, newUserObj]);
       showNotification('Anggota baru berhasil dibuat (Login Aktif)');
     } catch (error) {
       console.error(error);
