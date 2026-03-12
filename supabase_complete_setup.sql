@@ -180,7 +180,11 @@ CREATE POLICY "Allow Manage Roles" ON public.roles
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, name, username, status, role_id, avatar, color)
   VALUES (
@@ -194,9 +198,14 @@ BEGIN
     'bg-indigo-500'
   )
   ON CONFLICT (id) DO NOTHING;
+  
   RETURN new;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Fallback to ensure auth user is still created even if profile insert fails
+    RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
