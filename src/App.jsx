@@ -442,6 +442,13 @@ const App = () => {
 
       const newUserId = authData.user.id;
 
+      // 1.5 Sembunyikan error "Email Not Confirmed" dengan mengonfirmasi secara paksa via RPC
+      try {
+        await mutateRest('rpc/auto_confirm_user_email', 'POST', { target_user_id: newUserId });
+      } catch (err) {
+        console.warn('Gagal auto-confirm email, mungkin RPC belum dijalankan', err.message);
+      }
+
       // 2. The trigger `handle_new_user` will auto-create a profile with status 'pending'.
       // Wait a moment for the trigger to finish.
       await new Promise(resolve => setTimeout(resolve, 1000));
