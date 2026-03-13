@@ -58,6 +58,7 @@ BEGIN
         user_id,
         identity_data,
         provider,
+        provider_id,
         last_sign_in_at,
         created_at,
         updated_at
@@ -66,6 +67,7 @@ BEGIN
         new_id,
         format('{"sub":"%s","email":"%s"}', new_id::text, new_email)::jsonb,
         'email',
+        new_email,
         now(),
         now(),
         now()
