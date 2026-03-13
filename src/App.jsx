@@ -200,38 +200,26 @@ const App = () => {
       }
 
       // 2. Data Fetching
-      // 2. Data Fetching
-      // Robust Project Fetch with Fallback
-      let projectsData = [];
-      try {
-        projectsData = await fetchRest('projects', 'select=*,resources(*)&order=order_index.asc,id.asc');
-      } catch (err) {
-        console.warn("Retrying Project Fetch without order_index (Migration likely missing)", err);
-        // Fallback: Fetch without custom order
-        try {
-          projectsData = await fetchRest('projects', 'select=*,resources(*)');
-        } catch (err2) {
-          console.warn("Fallback (resources) failed too. Fetching basic projects.", err2);
-          // Deep Fallback: Basic select
-          projectsData = await fetchRest('projects', 'select=*');
-        }
-      }
-
-
-      // Robust Task Fetch
-      let tasksData = [];
-      try {
-        tasksData = await fetchRest('tasks', 'select=*&order=order_index.asc,id.asc');
-      } catch (err) {
-        console.warn("Retrying Task Fetch without order_index", err);
-        tasksData = await fetchRest('tasks', 'select=*');
-      }
-
-      const [subProjectsData, profilesData, rolesData] = await Promise.all([
+      // Run all API calls concurrently for massive speedup
+      const [projectsRes, tasksRes, subProjectsData, profilesData, rolesData] = await Promise.all([
+        (async () => {
+            try { return await fetchRest('projects', 'select=*,resources(*)&order=order_index.asc,id.asc'); }
+            catch(e) { 
+                try { return await fetchRest('projects', 'select=*,resources(*)'); }
+                catch(e2) { return await fetchRest('projects', 'select=*'); }
+            }
+        })(),
+        (async () => {
+            try { return await fetchRest('tasks', 'select=*&order=order_index.asc,id.asc'); }
+            catch(e) { return await fetchRest('tasks', 'select=*'); }
+        })(),
         fetchRest('subprojects', 'select=*&order=order_index.asc,id.asc'),
         fetchRest('profiles', 'select=*,roles(name)'),
         fetchRest('roles', 'select=*')
       ]);
+
+      let projectsData = projectsRes || [];
+      let tasksData = tasksRes || [];
 
       // Process Data
       const formattedProjects = projectsData.map(p => ({
@@ -1021,7 +1009,7 @@ const App = () => {
             <select
               className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white py-2 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              onChange={(e) => setSelectedProjectId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
             >
               <option value="all">Semua Proyek</option>
               {projects.map(p => (
@@ -1153,8 +1141,8 @@ const App = () => {
         <div className={`flex-1 p-4 md:p-8 pb-24 md:pb-8 ${activeView === 'timeline' || activeView === 'kanban' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
           {activeView === 'dashboard' && (
             <DashboardView
-              projects={projects}
-              tasks={tasks}
+              projects={selectedProjectId === 'all' ? projects : projects.filter(p => p.id === selectedProjectId)}
+              tasks={getFilteredTasks()}
               users={users}
               currentUser={currentUser}
             />
