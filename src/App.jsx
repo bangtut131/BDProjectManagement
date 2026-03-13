@@ -403,8 +403,8 @@ const App = () => {
     try {
       if (!userData.password) throw new Error('Password wajib diisi untuk user baru via Admin.');
 
-      const foundRole = roles.find(r => r.name === userData.role) || roles.find(r => r.name === 'Member');
-      const roleId = foundRole ? foundRole.id : 2;
+      const foundRole = roles.find(r => r.name === userData.role) || roles.find(r => r.name === 'Staff Lain');
+      const roleId = foundRole ? foundRole.id : 5;
 
       // Auto-convert username to email format if needed
       const cleanUsername = (userData.email || '').trim().replace(/\s+/g, '').toLowerCase();
@@ -439,7 +439,7 @@ const App = () => {
         id: newUserId,
         email: userData.email,
         name: userData.name,
-        role: foundRole ? foundRole.name : 'Member',
+        role: foundRole ? foundRole.name : 'Staff Lain',
         status: 'active',
         avatar: null,
         color: 'bg-indigo-500'
