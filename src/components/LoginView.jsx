@@ -65,9 +65,10 @@ export const LoginView = ({ onLogin }) => {
         try {
             // 3. REST API Login
             // Auto-append domain if username is entered (no @)
-            let finalEmail = email;
-            if (!email.includes('@')) {
-                finalEmail = `${email}@bd.com`;
+            const cleanEmail = email.trim().replace(/\s+/g, '').toLowerCase();
+            let finalEmail = cleanEmail;
+            if (!cleanEmail.includes('@')) {
+                finalEmail = `${cleanEmail}@bd.com`;
             }
 
             const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/token?grant_type=password`;
