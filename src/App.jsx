@@ -711,7 +711,10 @@ const App = () => {
         assignee_id: finalData.assignee || null,
         start_date: finalData.startDate,
         due_date: finalData.dueDate,
-        subproject_id: finalData.subProjectId
+        subproject_id: finalData.subProjectId,
+        comments: finalData.comments || [],
+        history: finalData.history || [],
+        attachments: finalData.attachments || []
       };
 
       if (editingTask) {
@@ -722,7 +725,9 @@ const App = () => {
         const updatedTask = {
           ...finalData,
           id: editingTask.id,
-          history: editingTask.history // Keep history
+          comments: payload.comments,
+          history: payload.history,
+          attachments: payload.attachments
         };
         setTasks(tasks.map(t => t.id === editingTask.id ? updatedTask : t));
         showNotification('Tugas berhasil diperbarui');
@@ -738,8 +743,9 @@ const App = () => {
           assignee: data.assignee_id,
           startDate: data.start_date,
           dueDate: data.due_date,
-          comments: [],
-          history: []
+          comments: data.comments || [],
+          history: data.history || [],
+          attachments: data.attachments || []
         };
         setTasks([...tasks, newTask]);
 
@@ -778,28 +784,42 @@ const App = () => {
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const oldStatus = task.status;
+    if (oldStatus === newStatus) return;
+
+    const newHistoryEntry = {
+      action: 'status',
+      text: `Mengubah status dari ${STATUS_CONFIG[oldStatus]?.label || oldStatus} menjadi ${STATUS_CONFIG[newStatus]?.label || newStatus}`,
+      user: currentUser?.name || 'Member',
+      timestamp: new Date().toISOString()
+    };
+
+    const updatedHistory = [newHistoryEntry, ...(task.history || [])];
+
     // Optimistic Update
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus, history: updatedHistory } : t));
 
     try {
-      await mutateRest('tasks', 'PATCH', { status: newStatus }, `?id=eq.${taskId}`);
+      await mutateRest('tasks', 'PATCH', { status: newStatus, history: updatedHistory }, `?id=eq.${taskId}`);
     } catch (error) {
       console.error(error);
       showNotification(`Gagal update status: ${error.message}`, 'error');
     }
   };
 
-  // Comments (Placeholder as table not fully impld in SQL yet, but assuming tasks table has jsonb or separate table)
-  // For now local state only to avoid breaking UI if backend table missing
-  const handleAddComment = (taskId, comment) => {
-    setTasks(tasks.map(t => {
-      if (t.id === taskId) {
-        return { ...t, comments: [comment, ...(t.comments || [])] };
-      }
-      return t;
-    }));
+  // Background update for comments/attachments without closing modal
+  const handleQuickSaveTask = async (taskId, partialData) => {
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, ...partialData } : t));
+    try {
+      await mutateRest('tasks', 'PATCH', partialData, `?id=eq.${taskId}`);
+    } catch (error) {
+      console.error('Failed to quick save task data:', error);
+      showNotification('Gagal mensinkronkan data tugas. Coba muat ulang.', 'error');
+    }
   };
-
   const openAddModal = () => {
     setEditingTask(null);
     setIsModalOpen(true);
@@ -1268,6 +1288,7 @@ const App = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTask}
+        onQuickSave={handleQuickSaveTask}
         task={editingTask}
         users={users}
         projects={projects}

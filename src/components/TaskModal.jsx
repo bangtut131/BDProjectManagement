@@ -4,7 +4,7 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from '../data/constants';
 import { formatDate } from '../lib/utils';
 import { Avatar } from './Avatar';
 
-export const TaskModal = ({ isOpen, onClose, onSave, task = null, users, projects, subProjects, onAddComment, onAddSubProject, initialProjectId }) => {
+export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, users, projects, subProjects, onAddSubProject, initialProjectId }) => {
     const [activeTab, setActiveTab] = useState('detail');
     const [newComment, setNewComment] = useState('');
 
@@ -118,9 +118,9 @@ export const TaskModal = ({ isOpen, onClose, onSave, task = null, users, project
         const updatedComments = [commentObj, ...formData.comments];
         setFormData(prev => ({ ...prev, comments: updatedComments }));
 
-        // Notify parent to save if editing existing task
-        if (task && onAddComment) {
-            onAddComment(task.id, commentObj);
+        // Real-time bypass save to database without closing modal
+        if (task && onQuickSave) {
+            onQuickSave(task.id, { comments: updatedComments });
         }
 
         setNewComment('');
@@ -148,20 +148,32 @@ export const TaskModal = ({ isOpen, onClose, onSave, task = null, users, project
                 uploadedAt: new Date().toISOString()
             };
 
+            const updatedAttachments = [...(formData.attachments || []), newFile];
             setFormData({
                 ...formData,
-                attachments: [...(formData.attachments || []), newFile]
+                attachments: updatedAttachments
             });
+            
+            // Auto-save attachment metadata to database if task already exists
+            if (task && onQuickSave) {
+                onQuickSave(task.id, { attachments: updatedAttachments });
+            }
         };
         reader.readAsDataURL(file);
     };
 
     const handleDeleteAttachment = (fileId) => {
         if (confirm('Hapus file lampiran ini?')) {
+            const updatedAttachments = formData.attachments.filter(f => f.id !== fileId);
             setFormData({
                 ...formData,
-                attachments: formData.attachments.filter(f => f.id !== fileId)
+                attachments: updatedAttachments
             });
+            
+            // Auto-save deletion
+            if (task && onQuickSave) {
+                onQuickSave(task.id, { attachments: updatedAttachments });
+            }
         }
     };
 
@@ -370,10 +382,10 @@ export const TaskModal = ({ isOpen, onClose, onSave, task = null, users, project
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
                                     {formData.comments && formData.comments.length > 0 ? (
-                                        formData.comments.map(comment => {
+                                        formData.comments.map((comment, index) => {
                                             const user = users.find(u => u.id === comment.userId);
                                             return (
-                                                <div key={comment.id} className="flex gap-3">
+                                                <div key={comment.id || index} className="flex gap-3">
                                                     <Avatar user={user} size="sm" />
                                                     <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg rounded-tl-none flex-1">
                                                         <div className="flex justify-between items-center mb-1">
