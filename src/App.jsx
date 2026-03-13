@@ -99,15 +99,10 @@ const App = () => {
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     let token = key;
-    const localKey = 'sb-bd-auth-token';
-    const localSession = localStorage.getItem(localKey);
-
-    if (localSession) {
-      try {
-        const session = JSON.parse(localSession);
-        if (session?.access_token && session.access_token !== 'mock-admin-token') token = session.access_token;
-      } catch (e) { /* ignore */ }
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) token = session.access_token;
+    } catch (e) { /* ignore */ }
 
     const response = await fetch(url, {
       method: 'GET',
@@ -128,15 +123,10 @@ const App = () => {
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     let token = key;
-    const localKey = 'sb-bd-auth-token';
-    const localSession = localStorage.getItem(localKey);
-
-    if (localSession) {
-      try {
-        const session = JSON.parse(localSession);
-        if (session?.access_token && session.access_token !== 'mock-admin-token') token = session.access_token;
-      } catch (e) { /* ignore */ }
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) token = session.access_token;
+    } catch (e) { /* ignore */ }
 
     const options = {
       method: method,
