@@ -172,89 +172,20 @@ export const LoginView = ({ onLogin }) => {
             // Append domain if not present
             const finalEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@bd.com`;
 
-            const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
-            const response = await fetch(authUrl, {
-                method: 'POST',
-                headers: {
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email: finalEmail,
-                    password: password,
-                    data: {
-                        name: username,
-                        username: cleanUsername,
-                        status: 'pending' // Default status for approval
-                    }
-                })
+            // Use the bypass RPC to avoid disabled email signups and rate limits
+            const { data: newUserId, error: rpcError } = await supabase.rpc('create_user_admin', {
+                new_email: finalEmail,
+                new_password: password,
+                new_name: username,
+                new_username: cleanUsername
             });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.msg || data.error_description || 'Signup failed');
+            if (rpcError) throw new Error(rpcError.message || 'Gagal mendaftar via server');
+            if (!newUserId) throw new Error('Pembuatan akun gagal.');
 
-            if (data.user) {
-                // EXPLICITLY CREATE PROFILE (Client-Side Backup to Trigger)
-                try {
-                    // Check for token (Auto-confirm vs Email Confirm)
-                    const accessToken = data.access_token || data.session?.access_token;
+            // Wait a moment for the handle_new_user DB trigger to create the profile
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-                    if (accessToken) {
-                        // 1. Fetch a valid Role ID
-                        let validRoleId = 1; // Fallback
-                        try {
-                            const roleRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/roles?select=id&limit=1`, {
-                                headers: {
-                                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                                    'Authorization': `Bearer ${accessToken}`
-                                }
-                            });
-                            if (roleRes.ok) {
-                                const roles = await roleRes.json();
-                                if (roles.length > 0) validRoleId = roles[0].id;
-                            }
-                        } catch (e) {
-                            console.warn('Failed to fetch roles, using fallback 1');
-                        }
-
-                        const profileUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`;
-                        const profilePayload = {
-                            id: data.user.id,
-                            // email: finalEmail, // REMOVED: Column does not exist in 'profiles'
-                            username: cleanUsername,
-                            name: username,
-                            status: 'pending',
-                            role_id: validRoleId, // DYNAMIC VALID ID
-                            color: 'bg-indigo-500'
-                        };
-
-                        const profileRes = await fetch(profileUrl, {
-                            method: 'POST',
-                            headers: {
-                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${accessToken}`,
-                                'Content-Type': 'application/json',
-                                'Prefer': 'resolution=merge-duplicates'
-                            },
-                            body: JSON.stringify(profilePayload)
-                        });
-
-                        if (!profileRes.ok) {
-                            const errData = await profileRes.json().catch(() => ({}));
-                            throw new Error(errData.message || `HTTP ${profileRes.status}`);
-                        }
-
-                    } else {
-                        console.log('No access token returned (Email Confirmation might be ON). Reliance on DB Trigger.');
-                    }
-                } catch (profileErr) {
-                    console.error('Manual profile creation warning:', profileErr);
-                    // ALERT THE USER
-                    alert(`Warning: User created in Auth, but Profile creation failed!\nReason: ${profileErr.message}\n\nPlease contact Admin with this error.`);
-                    // Don't throw here, let them proceed strictly to login (which will block them anyway if profile missing)
-                    // But blocking them here is better for UX so they don't think they are done.
-                }
-            }
             alert(`Registrasi berhasil!\nUsername: ${cleanUsername}\n\nStatus akun: MENUNGGU PERSETUJUAN.\nSilakan hubungi Admin untuk aktivasi.`);
             setIsLogin(true);
             setEmail(cleanUsername); // Pre-fill login
