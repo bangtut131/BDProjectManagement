@@ -244,8 +244,9 @@ const App = () => {
         assignee: t.assignee_id,
         startDate: t.start_date,
         dueDate: t.due_date,
-        comments: [],
-        history: []
+        comments: t.comments || [],
+        history: t.history || [],
+        attachments: t.attachments || []
       })));
 
       setUsers(profilesData.map(u => ({
