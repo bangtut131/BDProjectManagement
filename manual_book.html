@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Book - BD Project Management</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #e0e7ff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --bg-light: #f8fafc;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 11pt;
+            background: white;
+        }
+
+        @media print {
+            body { font-size: 10pt; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+            h2 { page-break-before: always; }
+            h2:first-of-type { page-break-before: avoid; }
+            table { page-break-inside: avoid; }
+            .info-box { page-break-inside: avoid; }
+        }
+
+        /* Print Button */
+        .print-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .print-bar button {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .print-bar button:hover { opacity: 0.9; }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 80px 40px 60px;
+        }
+
+        /* Cover Page */
+        .cover {
+            text-align: center;
+            padding: 120px 40px;
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .cover h1 {
+            font-size: 36pt;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+        .cover .subtitle {
+            font-size: 16pt;
+            color: var(--text-light);
+            margin-bottom: 48px;
+        }
+        .cover .version {
+            font-size: 11pt;
+            color: var(--text-light);
+            margin-top: 24px;
+            padding: 8px 24px;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: inline-block;
+        }
+        .cover .date {
+            font-size: 10pt;
+            color: var(--text-light);
+            margin-top: 16px;
+        }
+
+        /* Headings */
+        h2 {
+            font-size: 20pt;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 48px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--primary);
+        }
+        h3 {
+            font-size: 14pt;
+            font-weight: 700;
+            color: var(--text);
+            margin: 32px 0 12px;
+        }
+        h4 {
+            font-size: 12pt;
+            font-weight: 600;
+            color: var(--text);
+            margin: 20px 0 8px;
+        }
+
+        p { margin-bottom: 12px; }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 24px 0;
+        }
+        .toc h3 { margin-top: 0; font-size: 16pt; color: var(--primary); }
+        .toc ol {
+            padding-left: 24px;
+            counter-reset: toc;
+        }
+        .toc ol li {
+            padding: 6px 0;
+            font-size: 11pt;
+            border-bottom: 1px solid var(--border);
+        }
+        .toc ol li:last-child { border-bottom: none; }
+        .toc ol li a {
+            color: var(--text);
+            text-decoration: none;
+        }
+        .toc ol li a:hover { color: var(--primary); }
+
+        /* Info Boxes */
+        .info-box {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 10pt;
+        }
+        .info-box.tip {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+        .info-box.warning {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+        }
+        .info-box.note {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            color: #3730a3;
+        }
+        .info-box strong { display: block; margin-bottom: 4px; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 10pt;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background: var(--bg-light); }
+
+        /* Steps */
+        .steps {
+            counter-reset: step;
+            padding-left: 0;
+            list-style: none;
+        }
+        .steps li {
+            counter-increment: step;
+            padding: 12px 16px 12px 56px;
+            position: relative;
+            margin-bottom: 8px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 16px;
+            top: 12px;
+            width: 28px;
+            height: 28px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        /* Keyboard shortcuts */
+        kbd {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 9pt;
+            color: var(--primary);
+        }
+
+        /* Icon label */
+        .icon-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 2px 10px;
+            font-size: 10pt;
+            font-weight: 500;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .feature-item {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .feature-item h4 { margin: 0 0 6px; font-size: 11pt; }
+        .feature-item p { margin: 0; font-size: 10pt; color: var(--text-light); }
+
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        ul li { margin-bottom: 4px; }
+
+        .footer {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 9pt;
+            padding: 48px 0 24px;
+            border-top: 1px solid var(--border);
+            margin-top: 48px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Print Bar -->
+<div class="print-bar no-print">
+    <span>📖 BD Project Management — Manual Book</span>
+    <button onclick="window.print()">💾 Simpan sebagai PDF</button>
+</div>
+
+<div class="container">
+
+    <!-- COVER PAGE -->
+    <div class="cover page-break">
+        <div style="font-size: 48pt; margin-bottom: 24px;">📋</div>
+        <h1>BD Project Management</h1>
+        <p class="subtitle">Manual Book — Panduan Pengguna Lengkap</p>
+        <div class="version">Versi 1.0</div>
+        <p class="date">Maret 2026</p>
+    </div>
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc page-break">
+        <h3>📑 Daftar Isi</h3>
+        <ol>
+            <li><a href="#pendahuluan">Pendahuluan & Gambaran Umum</a></li>
+            <li><a href="#login">Login & Autentikasi</a></li>
+            <li><a href="#navigasi">Navigasi & Antarmuka</a></li>
+            <li><a href="#dashboard">Dashboard</a></li>
+            <li><a href="#project">Manajemen Project</a></li>
+            <li><a href="#subproject">Sub-Project</a></li>
+            <li><a href="#task">Manajemen Tugas (Task)</a></li>
+            <li><a href="#overview">Overview & Info Project</a></li>
+            <li><a href="#timeline">Timeline & Jadwal</a></li>
+            <li><a href="#calendar">Kalender</a></li>
+            <li><a href="#kanban">Kanban Board</a></li>
+            <li><a href="#list">Daftar Tugas (List View)</a></li>
+            <li><a href="#team">Tim & Anggota</a></li>
+            <li><a href="#settings">Pengaturan (Settings)</a></li>
+            <li><a href="#roles">Sistem Role & Permission</a></li>
+            <li><a href="#mobile">Penggunaan di Mobile</a></li>
+            <li><a href="#faq">FAQ & Troubleshooting</a></li>
+        </ol>
+    </div>
+
+    <!-- 1. PENDAHULUAN -->
+    <h2 id="pendahuluan">1. Pendahuluan & Gambaran Umum</h2>
+
+    <p><strong>BD Project Management</strong> adalah aplikasi web manajemen proyek yang dirancang untuk membantu tim dalam merencanakan, melacak, dan mengelola proyek secara efisien. Aplikasi ini dapat diakses melalui browser desktop maupun ponsel.</p>
+
+    <h3>Fitur Utama</h3>
+    <div class="feature-grid">
+        <div class="feature-item">
+            <h4>📊 Dashboard</h4>
+            <p>Ringkasan statistik seluruh proyek dan tugas dalam satu halaman.</p>
+        </div>
+        <div class="feature-item">
+            <h4>📋 Kanban Board</h4>
+            <p>Papan visual untuk memindahkan tugas antar status dengan drag & drop.</p>
+        </div>
+        <div class="feature-item">
+            <h4>📅 Timeline & Kalender</h4>
+            <p>Gantt chart dan kalender bulanan untuk melihat jadwal proyek.</p>
+        </div>
+        <div class="feature-item">
+            <h4>👥 Manajemen Tim</h4>
+            <p>Kelola anggota, role, dan permission secara granular.</p>
+        </div>
+    </div>
+
+    <h3>Teknologi</h3>
+    <table>
+        <tr><th>Komponen</th><th>Teknologi</th></tr>
+        <tr><td>Frontend</td><td>React + Vite + Tailwind CSS v4</td></tr>
+        <tr><td>Backend / Database</td><td>Supabase (PostgreSQL)</td></tr>
+        <tr><td>Hosting</td><td>Railway (Docker)</td></tr>
+        <tr><td>Autentikasi</td><td>Supabase Auth (Email/Password)</td></tr>
+    </table>
+
+    <!-- 2. LOGIN -->
+    <h2 id="login">2. Login & Autentikasi</h2>
+
+    <h3>2.1 Login sebagai Super Admin</h3>
+    <p>Super Admin adalah akun bawaan yang memiliki akses penuh ke semua fitur tanpa perlu didaftarkan di database.</p>
+
+    <ol class="steps">
+        <li>Buka halaman aplikasi di browser.</li>
+        <li>Pada field <strong>Username / Email</strong>, ketik: <code>admin</code></li>
+        <li>Pada field <strong>Password</strong>, ketik: <code>admin</code></li>
+        <li>Klik tombol <strong>Masuk</strong>.</li>
+    </ol>
+
+    <div class="info-box tip">
+        <strong>💡 Tips</strong>
+        Anda juga dapat login admin melalui tombol <strong>"Need Help?"</strong> di bagian bawah halaman login, yang akan mengaktifkan mode admin khusus.
+    </div>
+
+    <h3>2.2 Login sebagai User Biasa</h3>
+    <ol class="steps">
+        <li>Masukkan <strong>username</strong> (tanpa @bd.com) atau email lengkap.</li>
+        <li>Masukkan <strong>password</strong> yang telah diberikan oleh Admin.</li>
+        <li>Klik <strong>Masuk</strong>.</li>
+    </ol>
+
+    <div class="info-box note">
+        <strong>ℹ️ Catatan</strong>
+        Jika Anda memasukkan username tanpa domain (misal: <code>andi</code>), sistem secara otomatis akan menambahkan <code>@bd.com</code> menjadi <code>andi@bd.com</code>.
+    </div>
+
+    <h3>2.3 Registrasi (Daftar Akun Baru)</h3>
+    <ol class="steps">
+        <li>Klik link <strong>"Belum punya akun? Daftar"</strong> di bawah tombol Masuk.</li>
+        <li>Isi <strong>Nama Lengkap</strong>, <strong>Username</strong>, dan <strong>Password</strong>.</li>
+        <li>Klik tombol <strong>Daftar</strong>.</li>
+        <li>Akun baru akan berstatus <strong>"Menunggu Persetujuan"</strong> (pending).</li>
+        <li>Hubungi Admin untuk mengaktifkan akun Anda.</li>
+    </ol>
+
+    <div class="info-box warning">
+        <strong>⚠️ Penting</strong>
+        Akun baru tidak bisa langsung login. Admin harus mengubah status akun dari <em>Pending</em> menjadi <em>Active</em> melalui menu Settings → Team Management.
+    </div>
+
+    <h3>2.4 Logout</h3>
+    <p>Klik ikon <strong>Logout (↪)</strong> di bagian bawah sidebar (di samping nama pengguna), lalu konfirmasi dengan klik <strong>OK</strong>.</p>
+
+    <!-- 3. NAVIGASI -->
+    <h2 id="navigasi">3. Navigasi & Antarmuka</h2>
+
+    <h3>3.1 Layout Utama (Desktop)</h3>
+    <p>Tampilan desktop terdiri dari tiga bagian utama:</p>
+    <table>
+        <tr><th>Bagian</th><th>Posisi</th><th>Fungsi</th></tr>
+        <tr><td><strong>Sidebar</strong></td><td>Kiri</td><td>Navigasi menu, pemilihan project, dan info user</td></tr>
+        <tr><td><strong>Header</strong></td><td>Atas</td><td>Judul halaman, dark mode, notifikasi, dan settings</td></tr>
+        <tr><td><strong>Konten</strong></td><td>Tengah</td><td>Area kerja utama sesuai menu yang dipilih</td></tr>
+    </table>
+
+    <h3>3.2 Sidebar</h3>
+    <p>Sidebar berisi:</p>
+    <ul>
+        <li><strong>Logo & Nama Aplikasi</strong> — di bagian atas.</li>
+        <li><strong>Project Selector</strong> — dropdown untuk memilih project aktif atau "Semua Proyek".</li>
+        <li><strong>Menu Navigasi</strong>:
+            <ul>
+                <li>Dashboard</li>
+                <li>Overview & Info</li>
+                <li>Timeline & Jadwal</li>
+                <li>Kalender</li>
+                <li>Kanban Board</li>
+                <li>Daftar Tugas</li>
+                <li>Tim & Anggota</li>
+            </ul>
+        </li>
+        <li><strong>User Info</strong> — nama, role, dan tombol logout di bagian bawah.</li>
+    </ul>
+
+    <h3>3.3 Header</h3>
+    <p>Header berisi:</p>
+    <ul>
+        <li><strong>🌙 / ☀️ Dark Mode Toggle</strong> — untuk mengubah tema gelap/terang.</li>
+        <li><strong>🔔 Notifikasi</strong> — menampilkan tugas terlambat, tenggat waktu dekat, dan anggota pending.</li>
+        <li><strong>⚙️ Settings</strong> — hanya muncul untuk admin/Project Manager.</li>
+    </ul>
+
+    <h3>3.4 Tombol Aksi Cepat (FAB)</h3>
+    <p>Tombol bulat berwarna <strong>ungu (+)</strong> di pojok kanan bawah digunakan untuk <strong>menambah tugas baru</strong> secara cepat dari halaman manapun.</p>
+
+    <!-- 4. DASHBOARD -->
+    <h2 id="dashboard">4. Dashboard</h2>
+
+    <p>Dashboard menampilkan ringkasan statistik dari seluruh proyek dan tugas:</p>
+    <ul>
+        <li><strong>Total Proyek</strong> — jumlah proyek yang ada.</li>
+        <li><strong>Total Tugas</strong> — jumlah seluruh tugas.</li>
+        <li><strong>Tugas Selesai</strong> — jumlah tugas berstatus "Selesai".</li>
+        <li><strong>Anggota Tim</strong> — jumlah user terdaftar.</li>
+    </ul>
+
+    <p>Dashboard secara otomatis menampilkan data sesuai dengan <strong>project yang dipilih</strong> di sidebar. Jika memilih "Semua Proyek", data dari semua proyek akan ditampilkan.</p>
+
+    <!-- 5. PROJECT -->
+    <h2 id="project">5. Manajemen Project</h2>
+
+    <h3>5.1 Membuat Project Baru</h3>
+    <ol class="steps">
+        <li>Klik ikon <strong>＋ (PlusCircle)</strong> di sebelah Project Selector pada sidebar.</li>
+        <li>Isi formulir:
+            <ul>
+                <li><strong>Nama Project</strong> — nama proyek (wajib).</li>
+                <li><strong>Deskripsi</strong> — penjelasan singkat proyek.</li>
+                <li><strong>Tanggal Mulai & Selesai</strong> — periode proyek.</li>
+                <li><strong>Client</strong> — nama klien/pelanggan.</li>
+                <li><strong>Budget</strong> — anggaran proyek.</li>
+                <li><strong>Cover Image</strong> — URL gambar cover (opsional).</li>
+            </ul>
+        </li>
+        <li>Klik <strong>Simpan</strong>.</li>
+    </ol>
+
+    <div class="info-box tip">
+        <strong>💡 Tips</strong>
+        Setiap project baru otomatis dibuatkan Sub-Project bernama <strong>"General"</strong> agar Anda bisa langsung menambahkan tugas.
+    </div>
+
+    <h3>5.2 Mengedit Project</h3>
+    <ol class="steps">
+        <li>Pilih project dari dropdown sidebar.</li>
+        <li>Buka halaman <strong>Overview & Info</strong>.</li>
+        <li>Edit detail project yang diinginkan.</li>
+        <li>Perubahan akan otomatis tersimpan.</li>
+    </ol>
+
+    <h3>5.3 Menghapus Project</h3>
+    <ol class="steps">
+        <li>Pilih project yang ingin dihapus dari dropdown sidebar.</li>
+        <li>Klik ikon <strong>🗑️ (Trash)</strong> di sebelah dropdown.</li>
+        <li>Konfirmasi penghapusan.</li>
+    </ol>
+
+    <div class="info-box warning">
+        <strong>⚠️ Peringatan</strong>
+        Menghapus project akan menghapus <strong>semua sub-project dan tugas</strong> di dalamnya secara permanen. Tindakan ini tidak dapat dibatalkan.
+    </div>
+
+    <!-- 6. SUB-PROJECT -->
+    <h2 id="subproject">6. Sub-Project</h2>
+
+    <p>Sub-Project digunakan untuk mengelompokkan tugas-tugas dalam satu proyek menjadi fase, modul, atau kategori.</p>
+
+    <h3>6.1 Membuat Sub-Project</h3>
+    <ol class="steps">
+        <li>Buka halaman <strong>Overview & Info</strong> dari project yang dipilih.</li>
+        <li>Klik tombol <strong>Tambah Sub-Project</strong>.</li>
+        <li>Isi nama, tanggal mulai, dan tanggal selesai.</li>
+        <li>Klik <strong>Simpan</strong>.</li>
+    </ol>
+
+    <h3>6.2 Contoh Penggunaan Sub-Project</h3>
+    <table>
+        <tr><th>Project</th><th>Sub-Project</th></tr>
+        <tr><td>Website E-Commerce</td><td>Fase 1: UI/UX Desain</td></tr>
+        <tr><td>Website E-Commerce</td><td>Fase 2: Frontend Development</td></tr>
+        <tr><td>Website E-Commerce</td><td>Fase 3: Backend Development</td></tr>
+        <tr><td>Mobile App</td><td>Backend API</td></tr>
+    </table>
+
+    <!-- 7. TASK -->
+    <h2 id="task">7. Manajemen Tugas (Task)</h2>
+
+    <h3>7.1 Membuat Tugas Baru</h3>
+    <ol class="steps">
+        <li>Klik tombol <strong>＋ (bulat ungu)</strong> di pojok kanan bawah.</li>
+        <li>Isi formulir tugas:
+            <ul>
+                <li><strong>Judul Tugas</strong> — nama tugas (wajib).</li>
+                <li><strong>Project & Sub-Project</strong> — tugas ini masuk ke mana.</li>
+                <li><strong>Status</strong> — Akan Dikerjakan, Sedang Proses, Review, atau Selesai.</li>
+                <li><strong>Prioritas</strong> — Tinggi, Sedang, atau Rendah.</li>
+                <li><strong>Ditugaskan Ke</strong> — pilih anggota tim.</li>
+                <li><strong>Tanggal Mulai & Deadline</strong>.</li>
+            </ul>
+        </li>
+        <li>Klik <strong>Simpan Tugas</strong>.</li>
+    </ol>
+
+    <h3>7.2 Status Tugas</h3>
+    <table>
+        <tr><th>Status</th><th>Label</th><th>Keterangan</th></tr>
+        <tr><td><code>todo</code></td><td>Akan Dikerjakan</td><td>Tugas baru yang belum dimulai</td></tr>
+        <tr><td><code>in-progress</code></td><td>Sedang Proses</td><td>Tugas sedang dikerjakan</td></tr>
+        <tr><td><code>review</code></td><td>Review</td><td>Tugas selesai, menunggu peninjauan</td></tr>
+        <tr><td><code>done</code></td><td>Selesai</td><td>Tugas telah selesai sepenuhnya</td></tr>
+    </table>
+
+    <h3>7.3 Prioritas Tugas</h3>
+    <table>
+        <tr><th>Prioritas</th><th>Label</th><th>Warna</th></tr>
+        <tr><td><code>high</code></td><td>Tinggi</td><td>🔴 Merah</td></tr>
+        <tr><td><code>medium</code></td><td>Sedang</td><td>🟡 Kuning</td></tr>
+        <tr><td><code>low</code></td><td>Rendah</td><td>🔵 Biru</td></tr>
+    </table>
+
+    <h3>7.4 Mengedit Tugas</h3>
+    <p>Klik pada tugas di halaman <strong>Kanban</strong>, <strong>Daftar Tugas</strong>, atau <strong>Kalender</strong> untuk membuka modal edit. Ubah detail yang diinginkan, lalu klik <strong>Simpan Tugas</strong>.</p>
+
+    <h3>7.5 Menghapus Tugas</h3>
+    <p>Pada halaman <strong>Daftar Tugas</strong>, klik ikon <strong>🗑️</strong> di baris tugas yang ingin dihapus, lalu konfirmasi.</p>
+
+    <!-- 8. OVERVIEW -->
+    <h2 id="overview">8. Overview & Info Project</h2>
+
+    <p>Halaman ini menampilkan informasi detail dari project yang dipilih:</p>
+    <ul>
+        <li><strong>Informasi Project</strong> — nama, deskripsi, client, budget, tanggal, dan cover image.</li>
+        <li><strong>Daftar Sub-Project</strong> — semua sub-project dalam project ini.</li>
+        <li><strong>Progress Bar</strong> — persentase tugas yang telah selesai.</li>
+        <li><strong>Resources</strong> — link dan file terkait project (Figma, GitHub, dokumen, dll).</li>
+        <li><strong>Health Status</strong> — indikator kesehatan proyek berdasarkan deadline.</li>
+    </ul>
+
+    <div class="info-box note">
+        <strong>ℹ️ Catatan</strong>
+        Halaman Overview hanya menampilkan detail project jika Anda telah memilih satu project di sidebar. Jika memilih "Semua Proyek", akan menampilkan ringkasan semua project.
+    </div>
+
+    <!-- 9. TIMELINE -->
+    <h2 id="timeline">9. Timeline & Jadwal</h2>
+
+    <p>Halaman Timeline menampilkan <strong>Gantt Chart</strong> interaktif yang memvisualisasikan jadwal proyek, sub-project, dan tugas dalam format horizontal timeline.</p>
+
+    <h3>Cara Membaca Timeline</h3>
+    <table>
+        <tr><th>Warna Bar</th><th>Jenis</th></tr>
+        <tr><td>🟣 Ungu (Indigo)</td><td>Project</td></tr>
+        <tr><td>🔵 Biru</td><td>Sub-Project</td></tr>
+        <tr><td>🟢 Hijau</td><td>Task (Selesai)</td></tr>
+        <tr><td>⚪ Abu-abu</td><td>Task (Belum Selesai)</td></tr>
+    </table>
+
+    <h3>Navigasi Timeline</h3>
+    <ul>
+        <li><strong>Scroll horizontal</strong> untuk melihat tanggal yang berbeda.</li>
+        <li>Kolom <strong>Item</strong> di sebelah kiri menampilkan nama project/sub-project/task.</li>
+        <li>Kolom Item bersifat <strong>sticky</strong> (tetap terlihat saat scroll horizontal).</li>
+    </ul>
+
+    <!-- 10. CALENDAR -->
+    <h2 id="calendar">10. Kalender</h2>
+
+    <p>Kalender menampilkan tugas-tugas dalam format <strong>kalender bulanan</strong>. Setiap tugas ditampilkan pada tanggal deadline-nya.</p>
+
+    <h3>Fitur Kalender</h3>
+    <ul>
+        <li>Navigasi bulan dengan tombol <strong>◀ / ▶</strong>.</li>
+        <li>Klik pada tugas di kalender untuk <strong>mengedit</strong> tugas tersebut.</li>
+        <li>Tugas ditampilkan dengan warna sesuai statusnya.</li>
+        <li>Data difilter sesuai project yang dipilih di sidebar.</li>
+    </ul>
+
+    <!-- 11. KANBAN -->
+    <h2 id="kanban">11. Kanban Board</h2>
+
+    <p>Kanban Board menampilkan tugas dalam <strong>4 kolom status</strong> yang memungkinkan visualisasi alur kerja:</p>
+
+    <table>
+        <tr><th>Kolom</th><th>Keterangan</th></tr>
+        <tr><td>Akan Dikerjakan</td><td>Tugas baru / backlog</td></tr>
+        <tr><td>Sedang Proses</td><td>Tugas yang sedang aktif dikerjakan</td></tr>
+        <tr><td>Review</td><td>Tugas selesai, menunggu review</td></tr>
+        <tr><td>Selesai</td><td>Tugas yang telah final</td></tr>
+    </table>
+
+    <h3>Cara Menggunakan Kanban</h3>
+    <ul>
+        <li><strong>Ubah status</strong> tugas dengan mengklik tombol status pada kartu tugas.</li>
+        <li>Klik kartu tugas untuk <strong>mengedit detail</strong>.</li>
+        <li>Setiap kartu menampilkan: judul, prioritas, assignee, dan tanggal.</li>
+    </ul>
+
+    <!-- 12. LIST -->
+    <h2 id="list">12. Daftar Tugas (List View)</h2>
+
+    <p>Halaman ini menampilkan semua tugas dalam format <strong>tabel</strong> yang dikelompokkan per project.</p>
+
+    <h3>Fitur Daftar Tugas</h3>
+    <ul>
+        <li><strong>Pencarian</strong> — cari tugas berdasarkan judul di semua project.</li>
+        <li><strong>Sorting</strong> — urutkan tugas berdasarkan kolom.</li>
+        <li><strong>Drag & Drop</strong> — atur ulang urutan tugas dan project.</li>
+        <li><strong>Quick Status Change</strong> — klik status untuk mengubah secara cepat.</li>
+        <li><strong>Edit & Hapus</strong> — melalui ikon aksi di setiap baris.</li>
+    </ul>
+
+    <h3>Kolom Tabel</h3>
+    <table>
+        <tr><th>Kolom</th><th>Keterangan</th></tr>
+        <tr><td>Tugas</td><td>Judul tugas</td></tr>
+        <tr><td>Status</td><td>Badge status (klikable untuk mengubah)</td></tr>
+        <tr><td>Prioritas</td><td>Badge prioritas</td></tr>
+        <tr><td>Ditugaskan</td><td>Avatar anggota yang ditugaskan</td></tr>
+        <tr><td>Deadline</td><td>Tanggal deadline</td></tr>
+        <tr><td>Aksi</td><td>Tombol edit dan hapus</td></tr>
+    </table>
+
+    <!-- 13. TEAM -->
+    <h2 id="team">13. Tim & Anggota</h2>
+
+    <p>Halaman ini menampilkan semua anggota tim beserta role dan statusnya.</p>
+
+    <h3>Informasi Anggota</h3>
+    <ul>
+        <li><strong>Avatar</strong> — foto profil atau inisial nama.</li>
+        <li><strong>Nama & Email</strong>.</li>
+        <li><strong>Role</strong> — peran dalam tim (Project Manager, Developer, dll).</li>
+        <li><strong>Status</strong> — Active, Pending, atau Inactive.</li>
+    </ul>
+
+    <h3>Aksi Admin</h3>
+    <ul>
+        <li><strong>Approve/Reject</strong> anggota dengan status Pending.</li>
+        <li><strong>Edit profil</strong> anggota (nama, role, status, warna).</li>
+        <li><strong>Hapus anggota</strong> dari tim.</li>
+    </ul>
+
+    <!-- 14. SETTINGS -->
+    <h2 id="settings">14. Pengaturan (Settings)</h2>
+
+    <p>Menu Settings hanya dapat diakses oleh pengguna dengan permission <strong>canManageRoles</strong> (biasanya Project Manager atau Super Admin). Akses melalui ikon ⚙️ di header.</p>
+
+    <h3>14.1 Tab: Team Management</h3>
+    <p>Kelola anggota tim:</p>
+    <ul>
+        <li><strong>Tambah Anggota Baru</strong> — dengan email dan password (langsung aktif, tidak perlu registrasi).</li>
+        <li><strong>Edit Anggota</strong> — ubah nama, role, status, dan warna.</li>
+        <li><strong>Hapus Anggota</strong> — hapus dari sistem.</li>
+        <li><strong>Ubah Password</strong> — hanya bisa untuk diri sendiri.</li>
+    </ul>
+
+    <h3>14.2 Tab: Role Management</h3>
+    <p>Kelola role dan permission:</p>
+    <ul>
+        <li><strong>Buat Role Baru</strong> — tentukan nama, warna, dan permission.</li>
+        <li><strong>Edit Role</strong> — ubah permission akses.</li>
+    </ul>
+
+    <h3>14.3 Tab: Backup</h3>
+    <p>Export data aplikasi dalam format JSON untuk backup.</p>
+
+    <!-- 15. ROLES -->
+    <h2 id="roles">15. Sistem Role & Permission</h2>
+
+    <p>Setiap anggota tim memiliki satu <strong>Role</strong> yang menentukan <strong>Permission</strong> (hak akses) mereka.</p>
+
+    <h3>Permission yang Tersedia</h3>
+    <table>
+        <tr><th>Permission</th><th>Keterangan</th></tr>
+        <tr><td><code>canManageTeam</code></td><td>Mengelola anggota tim (tambah, edit, hapus, approve)</td></tr>
+        <tr><td><code>canManageProjects</code></td><td>Mengelola project (buat, edit, hapus project & sub-project)</td></tr>
+        <tr><td><code>canManageTasks</code></td><td>Mengelola tugas (buat, edit)</td></tr>
+        <tr><td><code>canManageRoles</code></td><td>Akses ke Settings & Role Management</td></tr>
+        <tr><td><code>canDeleteTasks</code></td><td>Menghapus tugas</td></tr>
+        <tr><td><code>canDeleteProjects</code></td><td>Menghapus project</td></tr>
+    </table>
+
+    <h3>Role Default</h3>
+    <table>
+        <tr><th>Role</th><th>Permission</th></tr>
+        <tr><td><strong>Project Manager</strong></td><td>Semua permission aktif ✅</td></tr>
+        <tr><td><strong>Senior Developer</strong></td><td>Kelola Tugas saja</td></tr>
+        <tr><td><strong>Frontend Dev</strong></td><td>Kelola Tugas saja</td></tr>
+        <tr><td><strong>Backend Dev</strong></td><td>Kelola Tugas saja</td></tr>
+        <tr><td><strong>UI/UX Designer</strong></td><td>Kelola Tugas saja</td></tr>
+    </table>
+
+    <div class="info-box note">
+        <strong>ℹ️ Super Admin</strong>
+        Akun <code>admin@bd.com</code> (Super Admin) memiliki <strong>semua permission</strong> secara otomatis, terlepas dari role yang ditetapkan.
+    </div>
+
+    <!-- 16. MOBILE -->
+    <h2 id="mobile">16. Penggunaan di Mobile</h2>
+
+    <p>BD Project Management sepenuhnya responsif dan dapat digunakan di ponsel.</p>
+
+    <h3>Navigasi Mobile</h3>
+    <table>
+        <tr><th>Elemen</th><th>Keterangan</th></tr>
+        <tr><td><strong>☰ Hamburger Menu</strong></td><td>Tombol di pojok kiri atas untuk membuka sidebar</td></tr>
+        <tr><td><strong>Sidebar Geser</strong></td><td>Sidebar muncul sebagai overlay dari kiri, tutup dengan klik di luar</td></tr>
+        <tr><td><strong>Bottom Nav Bar</strong></td><td>4 tombol navigasi cepat di bawah layar: Home, Kanban, Tugas, Tim</td></tr>
+        <tr><td><strong>Tombol ＋ (FAB)</strong></td><td>Tombol bulat di atas bottom nav untuk tambah tugas cepat</td></tr>
+    </table>
+
+    <h3>Tips untuk Mobile</h3>
+    <ul>
+        <li>Gunakan <strong>Bottom Nav Bar</strong> untuk navigasi cepat ke menu utama.</li>
+        <li>Gunakan <strong>☰ Menu</strong> untuk akses menu lengkap (Overview, Timeline, Kalender, Settings).</li>
+        <li>Halaman Timeline bisa di-scroll horizontal untuk melihat tanggal.</li>
+    </ul>
+
+    <!-- 17. FAQ -->
+    <h2 id="faq">17. FAQ & Troubleshooting</h2>
+
+    <h3>Q: Saya tidak bisa login, muncul "Invalid login credentials"</h3>
+    <p><strong>A:</strong> Pastikan username dan password benar. Jika login sebagai admin, ketik <code>admin</code> di field Username dan <code>admin</code> di field Password. Jika masih gagal, coba clear cache browser.</p>
+
+    <h3>Q: Akun saya sudah didaftarkan tapi tidak bisa login</h3>
+    <p><strong>A:</strong> Akun baru berstatus <strong>"Pending"</strong>. Minta Admin untuk mengubah status Anda menjadi <strong>"Active"</strong> melalui Settings → Team Management.</p>
+
+    <h3>Q: Saya tidak melihat tombol tambah project / edit</h3>
+    <p><strong>A:</strong> Tombol-tombol tersebut hanya muncul jika role Anda memiliki permission yang sesuai. Hubungi Admin untuk mengubah role/permission Anda.</p>
+
+    <h3>Q: Data tidak muncul setelah login</h3>
+    <p><strong>A:</strong> Coba refresh halaman (<kbd>F5</kbd>). Jika masih kosong, periksa koneksi internet. Jika muncul error di console, hubungi Admin.</p>
+
+    <h3>Q: Bagaimana cara mengganti password?</h3>
+    <p><strong>A:</strong> Buka Settings → Team Management → cari nama Anda → klik Edit → masukkan password baru → Simpan. Catatan: Anda hanya bisa mengubah password sendiri.</p>
+
+    <h3>Q: Bagaimana cara backup data?</h3>
+    <p><strong>A:</strong> Buka Settings → Tab Backup → Klik Export. File JSON akan ter-download.</p>
+
+    <h3>Q: Aplikasi terasa lambat di HP</h3>
+    <p><strong>A:</strong> Gunakan browser Chrome atau Firefox terbaru. Tutup tab browser lain yang tidak diperlukan. Pastikan koneksi internet stabil.</p>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p><strong>BD Project Management</strong> — Manual Book v1.0</p>
+        <p>© 2026. All rights reserved.</p>
+    </div>
+
+</div>
+
+</body>
+</html>

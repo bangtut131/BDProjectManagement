@@ -410,30 +410,17 @@ const App = () => {
       const cleanUsername = (userData.email || '').trim().replace(/\s+/g, '').toLowerCase();
       const finalEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@bd.com`;
 
-      // 1. Sign up the user via standard Supabase Auth
-      // This ensures all auth.users and auth.identities records are created properly
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: finalEmail,
-        password: userData.password,
-        options: {
-          data: {
-            name: userData.name,
-            username: cleanUsername
-          }
-        }
+      // 1. Sign up the user BYPASSING SUPABASE RATE LIMITS via secure RPC
+      // This calls a server-side postgres function that injects directly into auth.users
+      const { data: newUserId, error: rpcError } = await supabase.rpc('create_user_admin', {
+        new_email: finalEmail,
+        new_password: userData.password,
+        new_name: userData.name,
+        new_username: cleanUsername
       });
 
-      if (signUpError) throw new Error(`Auth Error: ${signUpError.message}`);
-      if (!authData.user) throw new Error('Gagal mendapatkan data user setelah registrasi.');
-
-      const newUserId = authData.user.id;
-
-      // 1.5 Sembunyikan error "Email Not Confirmed" dengan mengonfirmasi secara paksa via RPC
-      try {
-        await mutateRest('rpc/auto_confirm_user_email', 'POST', { target_user_id: newUserId });
-      } catch (err) {
-        console.warn('Gagal auto-confirm email, mungkin RPC belum dijalankan', err.message);
-      }
+      if (rpcError) throw new Error(`Gagal membuat akun server: ${rpcError.message}`);
+      if (!newUserId) throw new Error('ID Pengguna tidak dikembalikan oleh server.');
 
       // 2. The trigger `handle_new_user` will auto-create a profile with status 'pending'.
       // Wait a moment for the trigger to finish.
