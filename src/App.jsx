@@ -171,20 +171,24 @@ const App = () => {
               validToken = parsed.access_token;
               sessionUser = parsed.user;
             } else {
-              // Verify Real User
-              const userUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/user`;
-              const res = await fetch(userUrl, {
-                headers: {
-                  'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                  'Authorization': `Bearer ${parsed.access_token}`
-                }
+              // Verify Real User & Hydrate SDK
+              const { data: { session, user }, error } = await supabase.auth.setSession({
+                access_token: parsed.access_token,
+                refresh_token: parsed.refresh_token || ''
               });
 
-              if (res.ok) {
-                validToken = parsed.access_token;
-                sessionUser = parsed.user;
+              if (!error && session) {
+                // Keep local storage updated in case token was refreshed
+                localStorage.setItem(keyName, JSON.stringify({
+                  ...parsed,
+                  access_token: session.access_token,
+                  refresh_token: session.refresh_token,
+                  user: user
+                }));
+                validToken = session.access_token;
+                sessionUser = user;
               } else {
-                console.warn('Session invalid/expired. Logging out.');
+                console.warn('Session invalid/expired. Logging out.', error);
                 localStorage.clear();
                 sessionUser = null;
               }
