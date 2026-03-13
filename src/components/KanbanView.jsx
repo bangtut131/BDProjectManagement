@@ -21,7 +21,12 @@ export const KanbanView = ({ tasks, users, subProjects, projects, selectedProjec
 
     const handleDrop = (e, status) => {
         if (!canMoveTasks) return;
-        const taskId = e.dataTransfer.getData('taskId');
+        const taskIdStr = e.dataTransfer.getData('taskId');
+        if (!taskIdStr) return;
+        
+        // Parse explicitly to Number because dataTransfer stores strings
+        // However, if your DB uses UUIDs, you shouldn't parse. But this uses SERIAL integers.
+        const taskId = parseInt(taskIdStr, 10);
         onStatusChange(taskId, status);
     };
 
