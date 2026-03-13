@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import logoBd from '../assets/logo_bd.png';
 
 export const LoginView = ({ onLogin }) => {
