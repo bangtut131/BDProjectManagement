@@ -15,6 +15,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
     const [formData, setFormData] = useState({
         // ... existing initial state ...
         title: '',
+        description: '',
         status: 'todo',
         priority: 'medium',
         assignee: users[0]?.id || 1,
@@ -48,6 +49,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
             const defaultProject = initialProjectId || projects[0]?.id || '';
             setFormData({
                 title: '',
+                description: '',
                 status: 'todo',
                 priority: 'medium',
                 assignee: users[0]?.id || 1,
@@ -237,10 +239,21 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Judul Tugas</label>
                                 <input
                                     type="text"
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 mb-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     placeholder="Masukkan judul tugas..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Deskripsi Tugas</label>
+                                <textarea
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-y min-h-[80px]"
+                                    value={formData.description || ''}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Masukkan rincian atau deskripsi tugas..."
+                                    rows="3"
                                 />
                             </div>
 

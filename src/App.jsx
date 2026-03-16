@@ -244,6 +244,7 @@ const App = () => {
         assignee: t.assignee_id,
         startDate: t.start_date,
         dueDate: t.due_date,
+        description: t.description || '',
         comments: t.comments || [],
         history: t.history || [],
         attachments: t.attachments || []
@@ -707,6 +708,7 @@ const App = () => {
     try {
       const payload = {
         title: finalData.title,
+        description: finalData.description || null,
         status: finalData.status || 'todo',
         priority: finalData.priority || 'medium',
         assignee_id: finalData.assignee || null,
@@ -744,6 +746,7 @@ const App = () => {
           assignee: data.assignee_id,
           startDate: data.start_date,
           dueDate: data.due_date,
+          description: data.description || '',
           comments: data.comments || [],
           history: data.history || [],
           attachments: data.attachments || []
