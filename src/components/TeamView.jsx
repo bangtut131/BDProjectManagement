@@ -293,8 +293,8 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeUsers.map(user => {
-                    const userTasks = tasks ? tasks.filter(t => t.assignee === user.id).length : 0;
-                    const userProjects = tasks ? new Set(tasks.filter(t => t.assignee === user.id).map(t => t.projectId)).size : 0;
+                    const userTasks = tasks ? tasks.filter(t => (t.assignees || []).includes(user.id)).length : 0;
+                    const userProjects = tasks ? new Set(tasks.filter(t => (t.assignees || []).includes(user.id)).map(t => t.projectId)).size : 0;
 
                     return (
                         <Card key={user.id} className="p-6 flex flex-col items-center text-center hover:shadow-lg transition group relative">

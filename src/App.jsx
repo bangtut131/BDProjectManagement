@@ -242,6 +242,7 @@ const App = () => {
         ...t,
         subProjectId: t.subproject_id,
         assignee: t.assignee_id,
+        assignees: t.assignees || (t.assignee_id ? [t.assignee_id] : []),
         startDate: t.start_date,
         dueDate: t.due_date,
         description: t.description || '',
@@ -706,12 +707,14 @@ const App = () => {
     const { projectId, ...finalData } = taskData;
 
     try {
+      const assigneesArray = finalData.assignees || [];
       const payload = {
         title: finalData.title,
         description: finalData.description || null,
         status: finalData.status || 'todo',
         priority: finalData.priority || 'medium',
-        assignee_id: finalData.assignee || null,
+        assignee_id: assigneesArray.length > 0 ? assigneesArray[0] : null,
+        assignees: assigneesArray,
         start_date: finalData.startDate,
         due_date: finalData.dueDate,
         subproject_id: finalData.subProjectId,
@@ -728,6 +731,8 @@ const App = () => {
         const updatedTask = {
           ...finalData,
           id: editingTask.id,
+          assignees: assigneesArray,
+          assignee: assigneesArray[0] || null,
           comments: payload.comments,
           history: payload.history,
           attachments: payload.attachments
@@ -744,6 +749,7 @@ const App = () => {
           ...data,
           subProjectId: data.subproject_id,
           assignee: data.assignee_id,
+          assignees: data.assignees || (data.assignee_id ? [data.assignee_id] : []),
           startDate: data.start_date,
           dueDate: data.due_date,
           description: data.description || '',

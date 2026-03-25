@@ -205,7 +205,9 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                             {projectTasks.map(task => {
-                                                const assignee = users.find(u => u.id === task.assignee);
+                                                const taskAssignees = (task.assignees || (task.assignee ? [task.assignee] : []))
+                                                    .map(uid => users.find(u => u.id === uid))
+                                                    .filter(Boolean);
                                                 return (
                                                     <tr
                                                         key={task.id}
@@ -241,11 +243,18 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
                                                             </div>
                                                         </td>
                                                         <td className="p-4">
-                                                            {assignee && (
-                                                                <div className="flex items-center gap-2" title={assignee.name}>
-                                                                    <Avatar user={assignee} size="xs" />
-                                                                </div>
-                                                            )}
+                                                            <div className="flex items-center -space-x-1.5">
+                                                                {taskAssignees.slice(0, 3).map((u, i) => (
+                                                                    <div key={u.id} className="ring-2 ring-white dark:ring-slate-800 rounded-full" style={{ zIndex: 3 - i }} title={u.name}>
+                                                                        <Avatar user={u} size="xs" />
+                                                                    </div>
+                                                                ))}
+                                                                {taskAssignees.length > 3 && (
+                                                                    <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-600 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center text-[8px] font-bold text-slate-600 dark:text-slate-300">
+                                                                        +{taskAssignees.length - 3}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td className="p-4 text-slate-600 dark:text-slate-400 text-xs">
                                                             {formatDate(task.dueDate)}

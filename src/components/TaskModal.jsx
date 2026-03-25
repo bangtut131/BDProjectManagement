@@ -18,7 +18,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
         description: '',
         status: 'todo',
         priority: 'medium',
-        assignee: users[0]?.id || 1,
+        assignees: users.length > 0 ? [users[0].id] : [],
         startDate: new Date().toISOString().split('T')[0],
         dueDate: new Date().toISOString().split('T')[0],
         projectId: projects[0]?.id || '',
@@ -40,6 +40,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
             setFormData({
                 ...task,
                 projectId: projId,
+                assignees: task.assignees || (task.assignee ? [task.assignee] : []),
                 comments: task.comments || [],
                 history: task.history || [],
                 attachments: task.attachments || []
@@ -52,7 +53,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                 description: '',
                 status: 'todo',
                 priority: 'medium',
-                assignee: users[0]?.id || 1,
+                assignees: users.length > 0 ? [users[0].id] : [],
                 startDate: new Date().toISOString().split('T')[0],
                 dueDate: new Date().toISOString().split('T')[0],
                 projectId: defaultProject,
@@ -356,15 +357,55 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ditugaskan Ke</label>
-                                <select
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    value={formData.assignee}
-                                    onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                                >
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
+                                {/* Selected Assignees Preview */}
+                                {formData.assignees && formData.assignees.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {formData.assignees.map(uid => {
+                                            const u = users.find(x => x.id === uid);
+                                            if (!u) return null;
+                                            return (
+                                                <span key={uid} className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium px-2.5 py-1 rounded-full">
+                                                    <Avatar user={u} size="xs" />
+                                                    {u.name}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, assignees: formData.assignees.filter(id => id !== uid) })}
+                                                        className="ml-0.5 text-indigo-400 hover:text-red-500 transition"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {/* Multi-Select Checkbox List */}
+                                <div className="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
+                                    {users.map(u => {
+                                        const isSelected = formData.assignees?.includes(u.id);
+                                        return (
+                                            <label
+                                                key={u.id}
+                                                className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-700/50 ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : ''}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => {
+                                                        const newAssignees = isSelected
+                                                            ? formData.assignees.filter(id => id !== u.id)
+                                                            : [...(formData.assignees || []), u.id];
+                                                        setFormData({ ...formData, assignees: newAssignees });
+                                                    }}
+                                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <Avatar user={u} size="xs" />
+                                                <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
+                                                {u.role && <span className="text-[10px] text-slate-400 ml-auto">{u.role}</span>}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

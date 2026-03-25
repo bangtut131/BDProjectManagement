@@ -96,11 +96,17 @@ export const KanbanView = ({ tasks, users, subProjects, projects, selectedProjec
     };
 
     const renderTaskCard = (task) => {
-        const assignee = users.find(u => u.id === task.assignee);
+        const taskAssignees = (task.assignees || (task.assignee ? [task.assignee] : []))
+            .map(uid => users.find(u => u.id === uid))
+            .filter(Boolean);
+        const maxVisible = 3;
+        const visibleAssignees = taskAssignees.slice(0, maxVisible);
+        const overflow = taskAssignees.length - maxVisible;
+
         return (
             <div
                 key={task.id}
-                draggable={canMoveTasks} // Disable dragging visually/functionally
+                draggable={canMoveTasks}
                 onDragStart={(e) => handleDragStart(e, task.id)}
                 onClick={() => canManageTasks && onEditTask(task)}
                 className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 transition group ${canMoveTasks ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700' : 'cursor-default opacity-90'}`}
@@ -115,7 +121,19 @@ export const KanbanView = ({ tasks, users, subProjects, projects, selectedProjec
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3 line-clamp-2">{task.title}</h4>
 
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <Avatar user={assignee} size="sm" />
+                    <div className="flex items-center -space-x-2">
+                        {visibleAssignees.map((u, i) => (
+                            <div key={u.id} className="ring-2 ring-white dark:ring-slate-800 rounded-full" style={{ zIndex: maxVisible - i }} title={u.name}>
+                                <Avatar user={u} size="sm" />
+                            </div>
+                        ))}
+                        {overflow > 0 && (
+                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-600 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                +{overflow}
+                            </div>
+                        )}
+                        {taskAssignees.length === 0 && <Avatar user={null} size="sm" />}
+                    </div>
                     <div className="flex items-center gap-1 text-xs text-slate-400">
                         <Clock size={12} />
                         <span>{formatDate(task.dueDate)}</span>
