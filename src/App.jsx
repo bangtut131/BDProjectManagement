@@ -319,14 +319,25 @@ const App = () => {
                 taskId: d.task_id,
                 isDb: true // Flag to know which ones to update in DB
               }));
-              return [...systemNotifs, ...dbNotifs].sort((a,b) => new Date(b.date) - new Date(a.date));
+              
+              const merged = [...systemNotifs, ...dbNotifs].sort((a,b) => new Date(b.date) - new Date(a.date));
+              
+              // Only trigger re-render if something actually changed to avoid infinite loops
+              if (JSON.stringify(prev) !== JSON.stringify(merged)) {
+                 return merged;
+              }
+              return prev;
             });
           }
         } catch (error) {
           console.error('Failed to load DB notifications', error);
         }
       };
+      
       fetchDbNotifs();
+      const interval = setInterval(fetchDbNotifs, 15000); // Poll every 15s to simulate realtime
+
+      return () => clearInterval(interval);
     }
   }, [currentUser?.id]);
 
@@ -774,13 +785,36 @@ const App = () => {
     if (!userPermissions.canManageTasks) return showNotification('Anda tidak memiliki akses untuk membuat/edit tugas', 'error');
 
     const { projectId, ...finalData } = taskData;
+    
+    // Approval Gate for "Selesai" via Modal Edit
+    let actualStatus = finalData.status || 'todo';
+    let requiredApproval = false;
+    
+    if (actualStatus === 'done' && !userPermissions.canManageProjects) {
+        actualStatus = 'review';
+        requiredApproval = true;
+    }
 
     try {
       const assigneesArray = finalData.assignees || [];
+      
+      let modifiedHistory = finalData.history || [];
+      if (editingTask && editingTask.status !== actualStatus) {
+         const newHistoryEntry = {
+            action: 'status',
+            text: requiredApproval 
+               ? `Mengajukan status ke Review untuk persetujuan Selesai`
+               : `Mengubah status dari ${STATUS_CONFIG[editingTask.status]?.label || editingTask.status} menjadi ${STATUS_CONFIG[actualStatus]?.label || actualStatus}`,
+            user: currentUser?.name || 'Member',
+            timestamp: new Date().toISOString()
+         };
+         modifiedHistory = [newHistoryEntry, ...modifiedHistory];
+      }
+      
       const payload = {
         title: finalData.title,
         description: finalData.description || null,
-        status: finalData.status || 'todo',
+        status: actualStatus,
         priority: finalData.priority || 'medium',
         assignee_id: assigneesArray.length > 0 ? assigneesArray[0] : null,
         assignees: assigneesArray,
@@ -788,18 +822,18 @@ const App = () => {
         due_date: finalData.dueDate,
         subproject_id: finalData.subProjectId,
         comments: finalData.comments || [],
-        history: finalData.history || [],
+        history: modifiedHistory,
         attachments: finalData.attachments || []
       };
 
       if (editingTask) {
         // UPDATE
         const result = await mutateRest('tasks', 'PATCH', payload, `?id=eq.${editingTask.id}`);
-        // const data = result[0]; // If using 'prefer: return=representation'
 
         const updatedTask = {
           ...finalData,
           id: editingTask.id,
+          status: actualStatus,
           assignees: assigneesArray,
           assignee: assigneesArray[0] || null,
           comments: payload.comments,
@@ -807,7 +841,19 @@ const App = () => {
           attachments: payload.attachments
         };
         setTasks(tasks.map(t => t.id === editingTask.id ? updatedTask : t));
-        showNotification('Tugas berhasil diperbarui');
+        
+        if (requiredApproval && editingTask.status !== 'done') {
+           showNotification('Tugas diajukan ke PM untuk direview sebelum Selesai', 'info');
+           const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
+           createNotification(pmUsers, 'Persetujuan Diperlukan', `Tugas "${finalData.title}" menunggu persetujuan selesai.`, editingTask.id);
+        } else if (actualStatus !== editingTask.status) {
+           showNotification('Status tugas berhasil diperbarui');
+           if (assigneesArray.length > 0) {
+              createNotification(assigneesArray, 'Status Tugas', `Status "${finalData.title}" diubah menjadi ${STATUS_CONFIG[actualStatus]?.label}`, editingTask.id);
+           }
+        } else {
+           showNotification('Tugas berhasil diperbarui');
+        }
 
       } else {
         // INSERT
