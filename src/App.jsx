@@ -200,22 +200,37 @@ const App = () => {
       }
 
       // 2. Data Fetching
-      // Run all API calls concurrently for massive speedup
-      const [projectsRes, tasksRes, subProjectsData, profilesData, rolesData] = await Promise.all([
-        (async () => {
+      // Run all API calls concurrently — each with its own error handler
+      const safeFetch = async (fn, fallback = []) => {
+        try { return await fn(); } catch(e) { console.warn('Fetch fallback:', e.message); return fallback; }
+      };
+
+      const timeoutFallback = new Promise(resolve => setTimeout(() => {
+        console.warn('Data fetch timeout — using empty data');
+        resolve([[], [], [], [], []]);
+      }, 12000));
+
+      const [projectsRes, tasksRes, subProjectsData, profilesData, rolesData] = await Promise.race([
+        Promise.all([
+          safeFetch(async () => {
             try { return await fetchRest('projects', 'select=*,resources(*)&order=order_index.asc,id.asc'); }
             catch(e) { 
                 try { return await fetchRest('projects', 'select=*,resources(*)'); }
                 catch(e2) { return await fetchRest('projects', 'select=*'); }
             }
-        })(),
-        (async () => {
+          }),
+          safeFetch(async () => {
             try { return await fetchRest('tasks', 'select=*&order=order_index.asc,id.asc'); }
             catch(e) { return await fetchRest('tasks', 'select=*'); }
-        })(),
-        fetchRest('subprojects', 'select=*&order=order_index.asc,id.asc'),
-        fetchRest('profiles', 'select=*,roles(name)'),
-        fetchRest('roles', 'select=*')
+          }),
+          safeFetch(async () => {
+            try { return await fetchRest('subprojects', 'select=*&order=order_index.asc,id.asc'); }
+            catch(e) { return await fetchRest('subprojects', 'select=*'); }
+          }),
+          safeFetch(() => fetchRest('profiles', 'select=*,roles(name)')),
+          safeFetch(() => fetchRest('roles', 'select=*'))
+        ]),
+        timeoutFallback
       ]);
 
       let projectsData = projectsRes || [];
