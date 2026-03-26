@@ -588,6 +588,20 @@ const App = () => {
     }
   };
 
+  const handleUpdateAvatar = async (userId, base64Image) => {
+    try {
+      await mutateRest('profiles', 'PATCH', { avatar: base64Image }, `?id=eq.${userId}`);
+      setUsers(users.map(u => u.id === userId ? { ...u, avatar: base64Image } : u));
+      if (currentUser && currentUser.id === userId) {
+        setCurrentUser(prev => ({ ...prev, avatar: base64Image }));
+      }
+      showNotification('Foto profil berhasil diperbarui');
+    } catch (error) {
+      console.error(error);
+      showNotification(`Gagal update avatar: ${error.message}`, 'error');
+    }
+  };
+
   const handleDeleteUser = async (userId) => {
     if (confirm('Hapus anggota ini?')) {
       try {
