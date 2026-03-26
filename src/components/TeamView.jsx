@@ -4,7 +4,7 @@ import { Card } from './Card';
 import { Avatar } from './Avatar';
 // import { supabase } from '../lib/supabaseClient'; // REMOVED SDK
 
-export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, onUpdateUser, onDeleteUser, projects, tasks, onRefresh }) => {
+export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, onUpdateUser, onDeleteUser, onUpdateAvatar, projects, tasks, onRefresh }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
@@ -23,6 +23,7 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
         avatar: ''
     });
     const [uploading, setUploading] = useState(false);
+    const [avatarUploadingId, setAvatarUploadingId] = useState(null);
     const [changePassword, setChangePassword] = useState(false);
 
     // Resolve Permissions
@@ -308,8 +309,48 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
                                 </button>
                             )}
 
-                            <div className="mb-4">
+                            <div className="mb-4 relative group/avatar">
                                 <Avatar user={user} size="xl" />
+                                {currentUser?.id === user.id && (
+                                    <>
+                                        <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer">
+                                            {avatarUploadingId === user.id ? (
+                                                <Loader2 size={24} className="animate-spin" />
+                                            ) : (
+                                                <Camera size={24} />
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="hidden" 
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    if (file.size > 2 * 1024 * 1024) {
+                                                        alert('Ukuran file maksimal 2MB');
+                                                        return;
+                                                    }
+
+                                                    setAvatarUploadingId(user.id);
+                                                    try {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = async () => {
+                                                            if (onUpdateAvatar) {
+                                                                await onUpdateAvatar(user.id, reader.result);
+                                                            }
+                                                            setAvatarUploadingId(null);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        setAvatarUploadingId(null);
+                                                    }
+                                                }} 
+                                                disabled={avatarUploadingId === user.id}
+                                            />
+                                        </label>
+                                    </>
+                                )}
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white">{user.name}</h3>
                             <p className="text-xs text-slate-400 mb-1">@{user.username || user.email?.split('@')[0]}</p>

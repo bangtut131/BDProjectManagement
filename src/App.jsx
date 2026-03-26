@@ -299,6 +299,37 @@ const App = () => {
     refreshData();
   }, []);
 
+  // Fetch DB Notifications
+  useEffect(() => {
+    if (currentUser && currentUser.id && currentUser.id !== 'admin-master') {
+      const fetchDbNotifs = async () => {
+        try {
+          const data = await fetchRest('notifications', `select=*&user_id=eq.${currentUser.id}&order=created_at.desc&limit=50`);
+          if (data && Array.isArray(data)) {
+            setNotifications(prev => {
+              // Keep system notifications (which have string IDs like 'overdue-123')
+              const systemNotifs = prev.filter(n => typeof n.id === 'string');
+              const dbNotifs = data.map(d => ({
+                id: d.id,
+                type: d.type || 'info',
+                title: d.title,
+                message: d.message,
+                date: d.created_at,
+                read: d.is_read,
+                taskId: d.task_id,
+                isDb: true // Flag to know which ones to update in DB
+              }));
+              return [...systemNotifs, ...dbNotifs].sort((a,b) => new Date(b.date) - new Date(a.date));
+            });
+          }
+        } catch (error) {
+          console.error('Failed to load DB notifications', error);
+        }
+      };
+      fetchDbNotifs();
+    }
+  }, [currentUser?.id]);
+
   // System Notifications Logic
   useEffect(() => {
     const checkSystemNotifications = () => {
@@ -386,10 +417,30 @@ const App = () => {
     }
   };
 
-  const handleMarkAsRead = (id = null) => {
+  const handleMarkAsRead = async (id = null) => {
+    // Optimistic Update
     setNotifications(prev => prev.map(n =>
       (id === null || n.id === id) ? { ...n, read: true } : n
     ));
+
+    // Persist to DB if it's a DB notification
+    if (id !== null) {
+      const notif = notifications.find(n => n.id === id);
+      if (notif?.isDb) {
+        try {
+          await mutateRest('notifications', 'PATCH', { is_read: true }, `?id=eq.${id}`);
+        } catch (e) { console.error('Failed to mark read', e); }
+      }
+    } else {
+      // Mark all as read
+      const unreadDbIds = notifications.filter(n => !n.read && n.isDb).map(n => n.id);
+      if (unreadDbIds.length > 0) {
+        try {
+          // Supabase REST IN filter: ?id=in.(1,2,3)
+          await mutateRest('notifications', 'PATCH', { is_read: true }, `?id=in.(${unreadDbIds.join(',')})`);
+        } catch (e) { console.error('Failed to mark all read', e); }
+      }
+    }
   };
 
   let notificationTimeout;
@@ -701,6 +752,24 @@ const App = () => {
     }
   };
 
+  const createNotification = async (userIds, title, message, taskId = null) => {
+    const targetUserIds = [...new Set(userIds)].filter(id => id && id !== currentUser?.id);
+    if (!targetUserIds.length) return;
+
+    try {
+      const payloads = targetUserIds.map(userId => ({
+        user_id: userId,
+        type: 'info',
+        title,
+        message,
+        task_id: taskId
+      }));
+      await mutateRest('notifications', 'POST', payloads);
+    } catch (e) {
+      console.error('Failed to create notification', e);
+    }
+  };
+
   const handleSaveTask = async (taskData) => {
     if (!userPermissions.canManageTasks) return showNotification('Anda tidak memiliki akses untuk membuat/edit tugas', 'error');
 
@@ -768,6 +837,11 @@ const App = () => {
           read: false
         }, ...prev]);
 
+        // Send DB Notification to assignees
+        if (assigneesArray.length > 0) {
+           createNotification(assigneesArray, 'Tugas Baru', `Anda ditugaskan pada: "${newTask.title}"`, newTask.id);
+        }
+
         showNotification('Tugas baru ditambahkan');
       }
       setIsModalOpen(false);
@@ -797,12 +871,23 @@ const App = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
+    let actualNewStatus = newStatus;
+    let requiredApproval = false;
+
+    // Approval Gate for "Selesai"
+    if (newStatus === 'done' && !userPermissions.canManageProjects) {
+       actualNewStatus = 'review';
+       requiredApproval = true;
+    }
+
     const oldStatus = task.status;
-    if (oldStatus === newStatus) return;
+    if (oldStatus === actualNewStatus) return;
 
     const newHistoryEntry = {
       action: 'status',
-      text: `Mengubah status dari ${STATUS_CONFIG[oldStatus]?.label || oldStatus} menjadi ${STATUS_CONFIG[newStatus]?.label || newStatus}`,
+      text: requiredApproval 
+          ? `Mengajukan status ke Review untuk persetujuan Selesai`
+          : `Mengubah status dari ${STATUS_CONFIG[oldStatus]?.label || oldStatus} menjadi ${STATUS_CONFIG[actualNewStatus]?.label || actualNewStatus}`,
       user: currentUser?.name || 'Member',
       timestamp: new Date().toISOString()
     };
@@ -810,10 +895,21 @@ const App = () => {
     const updatedHistory = [newHistoryEntry, ...(task.history || [])];
 
     // Optimistic Update
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus, history: updatedHistory } : t));
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: actualNewStatus, history: updatedHistory } : t));
 
     try {
-      await mutateRest('tasks', 'PATCH', { status: newStatus, history: updatedHistory }, `?id=eq.${taskId}`);
+      await mutateRest('tasks', 'PATCH', { status: actualNewStatus, history: updatedHistory }, `?id=eq.${taskId}`);
+      
+      if (requiredApproval) {
+         showNotification('Tugas diajukan ke PM untuk direview sebelum Selesai', 'info');
+         const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
+         createNotification(pmUsers, 'Persetujuan Diperlukan', `Tugas "${task.title}" menunggu persetujuan selesai.`, task.id);
+      } else {
+         // Notify Assignees
+         if (task.assignees && task.assignees.length > 0) {
+           createNotification(task.assignees, 'Status Tugas', `Status "${task.title}" diubah menjadi ${STATUS_CONFIG[actualNewStatus]?.label}`, task.id);
+         }
+      }
     } catch (error) {
       console.error(error);
       showNotification(`Gagal update status: ${error.message}`, 'error');
@@ -825,6 +921,17 @@ const App = () => {
     setTasks(tasks.map(t => t.id === taskId ? { ...t, ...partialData } : t));
     try {
       await mutateRest('tasks', 'PATCH', partialData, `?id=eq.${taskId}`);
+      
+      // If adding comment
+      if (partialData.comments) {
+         const task = tasks.find(t => t.id === taskId);
+         if (task && task.assignees) {
+            // Get all PMs
+            const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
+            createNotification([...task.assignees, ...pmUsers], 'Komentar Baru', `Komentar baru pada "${task.title}"`, task.id);
+         }
+      }
+      
     } catch (error) {
       console.error('Failed to quick save task data:', error);
       showNotification('Gagal mensinkronkan data tugas. Coba muat ulang.', 'error');
@@ -1248,6 +1355,7 @@ const App = () => {
               currentUser={currentUser}
               onUpdateRoles={handleUpdateRoles}
               onRefresh={refreshData}
+              onUpdateAvatar={handleUpdateAvatar}
             />
           )}
         </div>
@@ -1294,17 +1402,21 @@ const App = () => {
         users={users}
       />
 
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveTask}
-        onQuickSave={handleQuickSaveTask}
-        task={editingTask}
-        users={users}
-        projects={projects}
-        subProjects={subProjects}
-        initialProjectId={selectedProjectId !== 'all' ? selectedProjectId : null}
-      />
+      {isModalOpen && (
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveTask}
+          onQuickSave={handleQuickSaveTask}
+          task={editingTask}
+          users={users}
+          projects={projects}
+          subProjects={subProjects}
+          onAddSubProject={handleAddSubProject}
+          initialProjectId={selectedProjectId !== 'all' ? selectedProjectId : null}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* Notification Modal */}
       {selectedNotification && (

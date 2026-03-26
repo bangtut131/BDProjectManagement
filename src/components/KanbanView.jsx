@@ -116,7 +116,14 @@ export const KanbanView = ({ tasks, users, subProjects, projects, selectedProjec
                         <Layers size={10} />
                         {getSubProjectName(task.subProjectId)}
                     </span>
-                    {task.priority === 'high' && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                    <div className="flex items-center gap-1.5">
+                        {task.status === 'review' && (
+                            <span className="text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 px-1.5 py-0.5 rounded animate-pulse shadow-sm" title="Menunggu Persetujuan Manager">
+                                REVIEW PM
+                            </span>
+                        )}
+                        {task.priority === 'high' && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                    </div>
                 </div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3 line-clamp-2">{task.title}</h4>
 

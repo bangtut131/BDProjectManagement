@@ -4,9 +4,12 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from '../data/constants';
 import { formatDate } from '../lib/utils';
 import { Avatar } from './Avatar';
 
-export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, users, projects, subProjects, onAddSubProject, initialProjectId }) => {
+export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, users, projects, subProjects, onAddSubProject, initialProjectId, currentUser }) => {
     const [activeTab, setActiveTab] = useState('detail');
     const [newComment, setNewComment] = useState('');
+
+    // Inline Image Preview State
+    const [previewImage, setPreviewImage] = useState(null);
 
     // Inline Add Subproject State
     const [isAddingSubProject, setIsAddingSubProject] = useState(false);
@@ -112,7 +115,8 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
         if (!newComment.trim()) return;
         const commentObj = {
             id: `c${Date.now()}`,
-            userId: 1, // Assume current user is ID 1 (Andi P.)
+            userId: currentUser?.id || 'unknown',
+            userName: currentUser?.name || 'Unknown User',
             text: newComment,
             timestamp: new Date().toISOString()
         };
@@ -495,33 +499,34 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
 
                                 <div className="space-y-2">
                                     {formData.attachments && formData.attachments.length > 0 ? (
-                                        formData.attachments.map(file => (
-                                            <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                    <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-slate-600 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                                        <File size={20} />
+                                        formData.attachments.map(att => (
+                                            <div key={att.id} className="flex flex-col gap-2 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 flex items-center justify-center shrink-0">
+                                                        <FileText size={20} />
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{file.name}</p>
-                                                        <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB • {formatDate(file.uploadedAt)}</p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{att.name}</div>
+                                                        <div className="text-xs text-slate-500">{(att.size / 1024).toFixed(1)} KB</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <a href={att.url} download={att.name} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition" title="Unduh">
+                                                            <Download size={16} />
+                                                        </a>
+                                                        <button onClick={() => handleDeleteAttachment(att.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition" title="Hapus">
+                                                            <Trash size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => handleDownload(file)}
-                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition"
-                                                        title="Download"
+                                                {/* Inline Image Preview */}
+                                                {att.type && att.type.startsWith('image/') && (
+                                                    <div 
+                                                        className="mt-2 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition max-h-32 bg-slate-100 dark:bg-slate-900 flex justify-center"
+                                                        onClick={() => setPreviewImage(att.url)}
                                                     >
-                                                        <Download size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteAttachment(file.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition"
-                                                        title="Hapus"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
-                                                </div>
+                                                        <img src={att.url} alt={att.name} className="max-h-32 object-contain" />
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -580,6 +585,27 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                     </div>
                 )}
             </div >
+
+            {/* Lightbox Image Preview Modal */}
+            {previewImage && (
+                <div 
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <button 
+                        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 rounded-full transition"
+                        onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
+                    >
+                        <X size={24} />
+                    </button>
+                    <img 
+                        src={previewImage} 
+                        alt="Preview" 
+                        className="max-w-full max-h-full object-contain rounded shadow-2xl" 
+                        onClick={(e) => e.stopPropagation()} // Prevent click from closing immediately if clicked on image
+                    />
+                </div>
+            )}
         </div >
     );
 };

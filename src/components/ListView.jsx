@@ -232,9 +232,14 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
                                                             {getSubProjectName(task.subProjectId)}
                                                         </td>
                                                         <td className="p-4">
-                                                            <Badge className={`${STATUS_CONFIG[task.status].color} scale-90 origin-left`}>
-                                                                {STATUS_CONFIG[task.status].label}
-                                                            </Badge>
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge className={`${STATUS_CONFIG[task.status].color} scale-90 origin-left`}>
+                                                                    {STATUS_CONFIG[task.status].label}
+                                                                </Badge>
+                                                                {task.status === 'review' && (
+                                                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Menunggu Persetujuan Manager"></span>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td className="p-4">
                                                             <div className={`flex items-center gap-1.5 ${PRIORITY_CONFIG[task.priority].color} text-xs`}>

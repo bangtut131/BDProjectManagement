@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Download } from 'lucide-react';
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '../data/constants';
+import { exportTasksToICS } from '../utils/calendarExport';
 
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const MONTHS = [
@@ -95,7 +96,19 @@ export const CalendarView = ({ tasks, projects, onEditTask }) => {
                         <CalendarIcon className="text-indigo-600" />
                         {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </h2>
-                    <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => exportTasksToICS(tasks)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg text-xs font-semibold transition"
+                        title="Export ke kalender (Google Calendar, Outlook, Bawaan)"
+                    >
+                        <Download size={14} />
+                        <span className="hidden sm:inline">Export .ICS</span>
+                    </button>
+
+                    <div className="flex bg-slate-100/50 dark:bg-slate-700 p-1 rounded-lg">
                         <button onClick={handlePrevMonth} className="p-1 hover:bg-white dark:hover:bg-slate-600 rounded-md shadow-sm transition">
                             <ChevronLeft size={18} className="text-slate-600 dark:text-slate-300" />
                         </button>
