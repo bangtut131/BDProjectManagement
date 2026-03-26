@@ -219,7 +219,7 @@ const App = () => {
       const timeoutFallback = new Promise(resolve => setTimeout(() => {
         console.warn('Data fetch timeout — using empty data');
         resolve([[], [], [], [], []]);
-      }, 12000));
+      }, 30000));
 
       const [projectsRes, tasksRes, subProjectsData, profilesData, rolesData] = await Promise.race([
         Promise.all([
@@ -322,7 +322,14 @@ const App = () => {
   };
 
   useEffect(() => {
-    refreshData();
+    // Only fetch on mount if there's already a session in localStorage
+    const keyName = 'sb-bd-auth-token';
+    const localSession = localStorage.getItem(keyName);
+    if (localSession) {
+      refreshData();
+    } else {
+      setLoading(false); // No session = show login immediately
+    }
   }, []);
 
   // Fetch DB Notifications
