@@ -128,6 +128,17 @@ const App = () => {
       if (session?.access_token) token = session.access_token;
     } catch (e) { /* ignore */ }
 
+    // Fallback: try localStorage token for admin backdoor sessions
+    if (token === key) {
+      try {
+        const localKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (localKey) {
+          const parsed = JSON.parse(localStorage.getItem(localKey));
+          if (parsed?.access_token) token = parsed.access_token;
+        }
+      } catch(e) { /* ignore */ }
+    }
+
     const options = {
       method: method,
       headers: {
@@ -432,6 +443,8 @@ const App = () => {
   const handleLogin = async (credentials) => {
     setCurrentUser(credentials);
     showNotification(`Selamat datang, ${credentials.name || credentials.email}!`);
+    // Critical: Fetch all data after login
+    await refreshData();
   };
 
   const handleLogout = async () => {
@@ -781,7 +794,7 @@ const App = () => {
   const getPmUserIds = () => {
     return users.filter(u => {
       const roleName = u.role || u.roles?.name || '';
-      return roleName === 'Project Manager' || u.email === 'admin@bd.com';
+      return (roleName === 'Project Manager' || u.email === 'admin@bd.com') && u.id !== 'admin-master';
     }).map(u => u.id);
   };
 
