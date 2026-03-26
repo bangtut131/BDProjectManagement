@@ -123,55 +123,32 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
         }
     };
 
-    // REST Upload Handler - REPLACES SDK
+    // Base64 Upload Handler
     const handleFileUpload = async (e) => {
         try {
             setUploading(true);
             const file = e.target.files[0];
-            if (!file) return;
-
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.floor(Math.random() * 1000000)}.${fileExt}`;
-
-            // Direct REST Upload
-            const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${fileName}`;
-            const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-            // Get Token
-            let token = key;
-            const localKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-            if (localKey) {
-                try {
-                    const session = JSON.parse(localStorage.getItem(localKey));
-                    if (session?.access_token) token = session.access_token;
-                } catch (e) { /* ignore */ }
+            if (!file) {
+                setUploading(false);
+                return;
             }
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'apikey': key,
-                    'Authorization': `Bearer ${token}`,
-                    // Content-Type is inferred from body usually, or specific
-                    'Content-Type': file.type || 'image/jpeg',
-                    'x-upsert': 'true'
-                },
-                body: file
-            });
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || 'Upload gagal (network/permission)');
+            // Limit size to 2MB to prevent large base64 strings
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Ukuran file maksimal 2MB');
+                setUploading(false);
+                return;
             }
 
-            // Construct Public URL manually
-            const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
-
-            setFormData(prev => ({ ...prev, avatar: publicUrl }));
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, avatar: reader.result }));
+                setUploading(false);
+            };
+            reader.readAsDataURL(file);
         } catch (error) {
             console.error(error);
-            alert('Gagal upload gambar: ' + error.message);
-        } finally {
+            alert('Gagal memproses gambar: ' + error.message);
             setUploading(false);
         }
     };

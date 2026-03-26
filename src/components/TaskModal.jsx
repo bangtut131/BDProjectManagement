@@ -510,7 +510,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                                         <div className="text-xs text-slate-500">{(att.size / 1024).toFixed(1)} KB</div>
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <a href={att.url} download={att.name} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition" title="Unduh">
+                                                        <a href={att.data || att.url} download={att.name} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition" title="Unduh">
                                                             <Download size={16} />
                                                         </a>
                                                         <button onClick={() => handleDeleteAttachment(att.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition" title="Hapus">
@@ -522,9 +522,9 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                                 {att.type && att.type.startsWith('image/') && (
                                                     <div 
                                                         className="mt-2 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition max-h-32 bg-slate-100 dark:bg-slate-900 flex justify-center"
-                                                        onClick={() => setPreviewImage(att.url)}
+                                                        onClick={() => setPreviewImage(att.data || att.url)}
                                                     >
-                                                        <img src={att.url} alt={att.name} className="max-h-32 object-contain" />
+                                                        <img src={att.data || att.url} alt={att.name} className="max-h-32 object-contain" />
                                                     </div>
                                                 )}
                                             </div>
