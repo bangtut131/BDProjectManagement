@@ -36,6 +36,18 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
     const canManageTeam = permissions.canManageTeam;
     const canManageRoles = permissions.canManageRoles;
 
+    // Guard against initial load/null state
+    if (!currentUser || !users || users.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-64 text-slate-400">
+                <div className="text-center space-y-2">
+                    <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="text-sm">Memuat data tim...</p>
+                </div>
+            </div>
+        );
+    }
+
     const COLORS = [
         'bg-indigo-500', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500',
         'bg-amber-500', 'bg-purple-500', 'bg-cyan-500', 'bg-slate-500'

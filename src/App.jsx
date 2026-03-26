@@ -763,6 +763,13 @@ const App = () => {
     }
   };
 
+  const getPmUserIds = () => {
+    return users.filter(u => {
+      const roleName = u.role || u.roles?.name || '';
+      return roleName === 'Project Manager' || u.email === 'admin@bd.com';
+    }).map(u => u.id);
+  };
+
   const createNotification = async (userIds, title, message, taskId = null) => {
     const targetUserIds = [...new Set(userIds)].filter(id => id && id !== currentUser?.id);
     if (!targetUserIds.length) return;
@@ -844,7 +851,7 @@ const App = () => {
         
         if (requiredApproval && editingTask.status !== 'done') {
            showNotification('Tugas diajukan ke PM untuk direview sebelum Selesai', 'info');
-           const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
+           const pmUsers = getPmUserIds();
            createNotification(pmUsers, 'Persetujuan Diperlukan', `Tugas "${finalData.title}" menunggu persetujuan selesai.`, editingTask.id);
         } else if (actualStatus !== editingTask.status) {
            showNotification('Status tugas berhasil diperbarui');
@@ -948,7 +955,7 @@ const App = () => {
       
       if (requiredApproval) {
          showNotification('Tugas diajukan ke PM untuk direview sebelum Selesai', 'info');
-         const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
+         const pmUsers = getPmUserIds();
          createNotification(pmUsers, 'Persetujuan Diperlukan', `Tugas "${task.title}" menunggu persetujuan selesai.`, task.id);
       } else {
          // Notify Assignees
@@ -964,18 +971,19 @@ const App = () => {
 
   // Background update for comments/attachments without closing modal
   const handleQuickSaveTask = async (taskId, partialData) => {
+    // Capture task BEFORE state update
+    const taskRef = tasks.find(t => t.id === taskId);
     setTasks(tasks.map(t => t.id === taskId ? { ...t, ...partialData } : t));
     try {
       await mutateRest('tasks', 'PATCH', partialData, `?id=eq.${taskId}`);
       
-      // If adding comment
-      if (partialData.comments) {
-         const task = tasks.find(t => t.id === taskId);
-         if (task && task.assignees) {
-            // Get all PMs
-            const pmUsers = users.filter(u => u.roles?.name === 'Project Manager' || u.role === 'Project Manager').map(u => u.id);
-            createNotification([...task.assignees, ...pmUsers], 'Komentar Baru', `Komentar baru pada "${task.title}"`, task.id);
-         }
+      // If adding comment, notify assignees + PMs
+      if (partialData.comments && taskRef) {
+         const taskAssignees = taskRef.assignees || [];
+         const pmUsers = getPmUserIds();
+         const allRecipients = [...taskAssignees, ...pmUsers];
+         const commenterName = currentUser?.name || 'Seseorang';
+         createNotification(allRecipients, 'Komentar Baru', `${commenterName} berkomentar pada "${taskRef.title}"`, taskId);
       }
       
     } catch (error) {
@@ -1394,6 +1402,8 @@ const App = () => {
             <TeamView
               users={users}
               roles={roles}
+              tasks={tasks}
+              projects={projects}
               onAddUser={handleAddUser}
               onManageRoles={() => { setSettingsInitialTab('roles'); setIsSettingsModalOpen(true); }}
               onUpdateUser={handleUpdateUser}
