@@ -145,7 +145,7 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] md:max-h-[90vh] h-[100dvh] md:h-auto md:rounded-xl rounded-none">
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700">
@@ -158,31 +158,31 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
                     </button>
                 </div>
 
-                <div className="flex flex-1 overflow-hidden">
-                    {/* Sidebar Tabs */}
-                    <div className="w-64 bg-slate-50 dark:bg-slate-900/50 border-r border-slate-100 dark:border-slate-700 p-4 space-y-2">
+                <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                    {/* Sidebar Tabs - horizontal scroll on mobile, vertical on desktop */}
+                    <div className="md:w-56 bg-slate-50 dark:bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-700 p-2 md:p-4 flex md:flex-col gap-1 md:gap-2 overflow-x-auto md:overflow-x-visible flex-shrink-0">
                         <button
                             onClick={() => setActiveTab('general')}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'general' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
+                            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition whitespace-nowrap ${activeTab === 'general' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
                         >
                             <Database size={18} /> Backup & Data
                         </button>
                         <button
                             onClick={() => setActiveTab('users')}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'users' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
+                            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition whitespace-nowrap ${activeTab === 'users' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
                         >
                             <Users size={18} /> Manajemen User
                         </button>
                         <button
                             onClick={() => setActiveTab('roles')}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'roles' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
+                            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition whitespace-nowrap ${activeTab === 'roles' ? 'bg-white dark:bg-slate-800 shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
                         >
                             <Shield size={18} /> Role & Akses
                         </button>
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-slate-800">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white dark:bg-slate-800">
                         {error && (
                             <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg text-sm flex items-start gap-2">
                                 <AlertTriangle size={18} className="mt-0.5" />

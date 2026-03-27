@@ -189,8 +189,8 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
 
                             {/* Tasks Table */}
                             {expandedProjects[project.id] && (
-                                <div className="animate-in slide-in-from-top-2 duration-200">
-                                    <table className="w-full text-left text-sm">
+                                <div className="animate-in slide-in-from-top-2 duration-200 overflow-x-auto">
+                                    <table className="w-full text-left text-sm min-w-[640px]">
                                         {/* Header omitted to save space per group, or keep it? Keeping it for clarity per group */}
                                         <thead className="bg-slate-50/50 dark:bg-slate-800/30 text-xs text-slate-500 uppercase tracking-wider">
                                             <tr>

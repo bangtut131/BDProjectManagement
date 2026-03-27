@@ -127,7 +127,7 @@ export const TimelineView = ({ tasks, projects, subProjects, selectedProjectId }
                     {/* Calendar Header */}
                     <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
                         <div className="flex">
-                            <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 font-semibold text-sm md:text-base text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 flex items-end pb-2 sticky left-0 z-[5] bg-white dark:bg-slate-800" style={{ left: 0 }}>
+                            <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 font-semibold text-sm md:text-base text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 flex items-end pb-2 sticky left-0 z-20 bg-white dark:bg-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ left: 0 }}>
                                 Item
                             </div>
                             <div className="flex-1">
@@ -162,14 +162,14 @@ export const TimelineView = ({ tasks, projects, subProjects, selectedProjectId }
                             <div key={project.id}>
                                 {/* Project Row */}
                                 <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 pl-3 md:pl-4 border-r border-slate-200 dark:border-slate-700 font-bold text-xs md:text-sm text-indigo-700 dark:text-indigo-400 flex items-center gap-2 sticky left-0 z-[5] bg-slate-50 dark:bg-slate-800" style={{ left: 0 }}>
+                                    <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 pl-3 md:pl-4 border-r border-slate-200 dark:border-slate-700 font-bold text-xs md:text-sm text-indigo-700 dark:text-indigo-400 flex items-center gap-2 sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ left: 0 }}>
                                         <FolderOpen size={16} />
                                         {project.name}
                                     </div>
                                     <div className="flex-1 relative h-10">
                                         {/* Project Bar */}
                                         <div
-                                            className="absolute h-5 top-2.5 rounded bg-indigo-500/80 text-white text-xs flex items-center px-2 truncate shadow-sm z-10"
+                                            className="absolute h-5 top-2.5 rounded bg-indigo-500/80 text-white text-xs flex items-center px-2 truncate shadow-sm z-[1]"
                                             style={{
                                                 left: `${Math.max(0, getPos(project.startDate)) * 40}px`,
                                                 width: `${Math.max(40, (getPos(project.endDate) - getPos(project.startDate)) * 40)}px`
@@ -186,7 +186,7 @@ export const TimelineView = ({ tasks, projects, subProjects, selectedProjectId }
                                 {subProjects.filter(sp => sp.projectId === project.id).map(sub => (
                                     <div key={sub.id}>
                                         <div className="flex border-b border-slate-100 dark:border-slate-700">
-                                            <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 pl-5 md:pl-8 border-r border-slate-200 dark:border-slate-700 text-xs md:text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-2 sticky left-0 z-[5] bg-white dark:bg-slate-900" style={{ left: 0 }}>
+                                            <div className="w-40 md:w-64 flex-shrink-0 p-2 md:p-3 pl-5 md:pl-8 border-r border-slate-200 dark:border-slate-700 text-xs md:text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-2 sticky left-0 z-20 bg-white dark:bg-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ left: 0 }}>
                                                 <Layers size={14} />
                                                 {sub.name}
                                             </div>
@@ -206,7 +206,7 @@ export const TimelineView = ({ tasks, projects, subProjects, selectedProjectId }
                                         {/* Tasks */}
                                         {tasks.filter(t => t.subProjectId === sub.id).map(task => (
                                             <div key={task.id} className="flex border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                                <div className="w-40 md:w-64 flex-shrink-0 p-2 pl-7 md:pl-12 border-r border-slate-200 dark:border-slate-700 text-[11px] md:text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between sticky left-0 z-[5] bg-white dark:bg-slate-900" style={{ left: 0 }}>
+                                                <div className="w-40 md:w-64 flex-shrink-0 p-2 pl-7 md:pl-12 border-r border-slate-200 dark:border-slate-700 text-[11px] md:text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between sticky left-0 z-20 bg-white dark:bg-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ left: 0 }}>
                                                     <span>{task.title}</span>
                                                     <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[task.status].color.split(' ')[0].replace('bg-', 'bg-')}`}></span>
                                                 </div>

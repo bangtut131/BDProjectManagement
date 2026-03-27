@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="enableNotification">true</bool>
+    <bool name="enableSiteSettingsShortcut">true</bool>
+    <color name="backgroundColor">#F8FAFC</color>
+    <color name="colorPrimary">#4F46E5</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="navigationColor">#1E1B4B</color>
+    <color name="navigationColorDark">#1E1B4B</color>
+    <color name="navigationDividerColor">#1E1B4B</color>
+    <color name="navigationDividerColorDark">#1E1B4B</color>
+    <color name="shortcut_background">#F5F5F5</color>
+    <integer name="splashScreenFadeOutDuration">300</integer>
+    <string name="appName" translatable="false">BD Project Management</string>
+    <string name="assetStatements">
+    [{
+        \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+        \"target\": {
+            \"namespace\": \"web\",
+            \"site\": \"https://bdpm.gamaagrosejati.co.id\"
+        }
+    }]
+    
+  </string>
+    <string name="fallbackType" translatable="false">customtabs</string>
+    <string name="generatorApp" translatable="false">bubblewrap-cli</string>
+    <string name="hostName" translatable="false">bdpm.gamaagrosejati.co.id</string>
+    <string name="launchUrl" translatable="false">https://bdpm.gamaagrosejati.co.id/</string>
+    <string name="launcherName" translatable="false">BD PM</string>
+    <string name="orientation" translatable="false">portrait</string>
+    <string name="providerAuthority" translatable="false">co.id.gamaagrosejati.bdpm.fileprovider</string>
+</resources>
