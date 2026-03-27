@@ -3,13 +3,12 @@ import { Card } from './Card';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../data/constants';
 import { formatDate } from '../lib/utils';
 
-export const DashboardView = ({ tasks, projects, selectedProjectId }) => {
+export const DashboardView = ({ tasks, projects, subProjects, selectedProjectId }) => {
     const filteredTasks = selectedProjectId === 'all'
         ? tasks
         : tasks.filter(t => {
-            // Need to find if task's subproject belongs to project
-            // Note: Logic simplified here as per original code, assuming parent filter works on tasks
-            return true;
+            const projectSubIds = (subProjects || []).filter(sp => sp.projectId === selectedProjectId).map(sp => sp.id);
+            return projectSubIds.includes(t.subProjectId);
         });
 
     const stats = {
@@ -20,6 +19,15 @@ export const DashboardView = ({ tasks, projects, selectedProjectId }) => {
     };
 
     const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+
+    // Calculate per-project progress from actual task data
+    const getProjectProgress = (projectId) => {
+        const projectSubIds = (subProjects || []).filter(sp => sp.projectId === projectId).map(sp => sp.id);
+        const projectTasks = tasks.filter(t => projectSubIds.includes(t.subProjectId));
+        if (projectTasks.length === 0) return { total: 0, done: 0, pct: 0 };
+        const done = projectTasks.filter(t => t.status === 'done').length;
+        return { total: projectTasks.length, done, pct: Math.round((done / projectTasks.length) * 100) };
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -121,32 +129,47 @@ export const DashboardView = ({ tasks, projects, selectedProjectId }) => {
                     </div>
                 </Card>
 
-                {/* Project List / Nav placeholder */}
+                {/* Project List with REAL progress */}
                 <Card className="p-6">
                     <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Project Aktif</h3>
                     <div className="space-y-3">
-                        {projects.map(p => (
-                            <div key={p.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-medium text-slate-800 dark:text-slate-200">{p.name}</h4>
-                                        {p.is_private && (
-                                            <div className="flex items-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800" title="Proyek Private">
-                                                <Lock size={10} className="mr-1" /> Private
-                                            </div>
-                                        )}
+                        {projects.map(p => {
+                            const progress = getProjectProgress(p.id);
+                            return (
+                                <div key={p.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-medium text-slate-800 dark:text-slate-200">{p.name}</h4>
+                                            {p.is_private && (
+                                                <div className="flex items-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800" title="Proyek Private">
+                                                    <Lock size={10} className="mr-1" />Private
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Active</span>
                                     </div>
-                                    <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Active</span>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-2">
+                                        <CalendarDays size={12} />
+                                        {formatDate(p.startDate)} - {formatDate(p.endDate)}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 bg-slate-200 dark:bg-slate-600 h-1.5 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-700 ${
+                                                    progress.pct === 100 ? 'bg-emerald-500' :
+                                                    progress.pct >= 50 ? 'bg-indigo-500' :
+                                                    progress.pct > 0 ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-500'
+                                                }`}
+                                                style={{ width: `${Math.max(progress.pct, 0)}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 min-w-[36px] text-right">
+                                            {progress.total > 0 ? `${progress.done}/${progress.total}` : '—'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-2">
-                                    <CalendarDays size={12} />
-                                    {formatDate(p.startDate)} - {formatDate(p.endDate)}
-                                </div>
-                                <div className="w-full bg-slate-200 dark:bg-slate-600 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-indigo-500 h-full w-[45%]"></div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </Card>
             </div>

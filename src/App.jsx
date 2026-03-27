@@ -1382,6 +1382,8 @@ const App = () => {
             <DashboardView
               projects={selectedProjectId === 'all' ? projects : projects.filter(p => p.id === selectedProjectId)}
               tasks={getFilteredTasks()}
+              subProjects={subProjects}
+              selectedProjectId={selectedProjectId}
               users={users}
               currentUser={currentUser}
             />
