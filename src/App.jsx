@@ -830,29 +830,21 @@ const App = () => {
 
   const createNotification = async (userIds, title, message, taskId = null) => {
     const targetUserIds = [...new Set(userIds)].filter(id => id && id !== currentUser?.id);
-    console.log('[NOTIF] createNotification called:', { userIds, targetUserIds, title, taskId, currentUserId: currentUser?.id });
-    if (!targetUserIds.length) {
-      console.log('[NOTIF] No target users after filtering — skipping');
-      return;
-    }
+    if (!targetUserIds.length) return;
 
     // Use RPC function (SECURITY DEFINER) to bypass RLS
     for (const userId of targetUserIds) {
       try {
-        const { data, error } = await supabase.rpc('create_notification', {
+        const { error } = await supabase.rpc('create_notification', {
           p_user_id: userId,
           p_type: 'info',
           p_title: title,
           p_message: message,
           p_task_id: taskId || null
         });
-        if (error) {
-          console.error(`[NOTIF] RPC error for ${userId}:`, error.message);
-        } else {
-          console.log(`[NOTIF] Created notification #${data} for user ${userId}`);
-        }
+        if (error) console.error('[NOTIF] RPC error:', error.message);
       } catch (e) {
-        console.error(`[NOTIF] Exception for ${userId}:`, e.message);
+        console.error('[NOTIF] Exception:', e.message);
       }
     }
   };
