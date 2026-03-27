@@ -836,20 +836,24 @@ const App = () => {
       return;
     }
 
-    try {
-      const payloads = targetUserIds.map(userId => ({
-        user_id: userId,
-        type: 'info',
-        title,
-        message,
-        task_id: taskId || null
-      }));
-      console.log('[NOTIF] Sending payloads:', JSON.stringify(payloads));
-      const result = await mutateRest('notifications', 'POST', payloads);
-      console.log('[NOTIF] INSERT success:', result);
-    } catch (e) {
-      console.error('[NOTIF] INSERT FAILED:', e.message, e);
-      showNotification(`⚠️ Gagal kirim notifikasi: ${e.message}`, 'error');
+    // Use RPC function (SECURITY DEFINER) to bypass RLS
+    for (const userId of targetUserIds) {
+      try {
+        const { data, error } = await supabase.rpc('create_notification', {
+          p_user_id: userId,
+          p_type: 'info',
+          p_title: title,
+          p_message: message,
+          p_task_id: taskId || null
+        });
+        if (error) {
+          console.error(`[NOTIF] RPC error for ${userId}:`, error.message);
+        } else {
+          console.log(`[NOTIF] Created notification #${data} for user ${userId}`);
+        }
+      } catch (e) {
+        console.error(`[NOTIF] Exception for ${userId}:`, e.message);
+      }
     }
   };
 
