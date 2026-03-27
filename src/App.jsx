@@ -830,7 +830,11 @@ const App = () => {
 
   const createNotification = async (userIds, title, message, taskId = null) => {
     const targetUserIds = [...new Set(userIds)].filter(id => id && id !== currentUser?.id);
-    if (!targetUserIds.length) return;
+    console.log('[NOTIF] createNotification called:', { userIds, targetUserIds, title, taskId, currentUserId: currentUser?.id });
+    if (!targetUserIds.length) {
+      console.log('[NOTIF] No target users after filtering — skipping');
+      return;
+    }
 
     try {
       const payloads = targetUserIds.map(userId => ({
@@ -838,11 +842,14 @@ const App = () => {
         type: 'info',
         title,
         message,
-        task_id: taskId
+        task_id: taskId || null
       }));
-      await mutateRest('notifications', 'POST', payloads);
+      console.log('[NOTIF] Sending payloads:', JSON.stringify(payloads));
+      const result = await mutateRest('notifications', 'POST', payloads);
+      console.log('[NOTIF] INSERT success:', result);
     } catch (e) {
-      console.error('Failed to create notification', e);
+      console.error('[NOTIF] INSERT FAILED:', e.message, e);
+      showNotification(`⚠️ Gagal kirim notifikasi: ${e.message}`, 'error');
     }
   };
 
