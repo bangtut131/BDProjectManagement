@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -378,6 +378,51 @@ const App = () => {
     }
   }, []);
 
+  // Request Notification Permission after login
+  useEffect(() => {
+    if (currentUser && currentUser.id !== 'admin-master' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        // Small delay so UI loads first before showing permission dialog
+        const timer = setTimeout(() => {
+          Notification.requestPermission().then(perm => {
+            console.log('[PUSH] Notification permission:', perm);
+          });
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser]);
+
+  // Track which notification IDs we've already shown as native push
+  const shownPushIds = useRef(new Set());
+
+  // Show native notification for new unread items
+  const showNativePush = (notif) => {
+    if (Notification.permission !== 'granted') return;
+    if (shownPushIds.current.has(notif.id)) return;
+    shownPushIds.current.add(notif.id);
+
+    const options = {
+      body: notif.message || notif.title,
+      icon: '/icon-192x192.png',
+      badge: '/icon-96x96.png',
+      tag: `bdpm-notif-${notif.id}`,
+      data: { taskId: notif.taskId, notifId: notif.id },
+      vibrate: [200, 100, 200],
+      requireInteraction: false
+    };
+
+    // Use ServiceWorker registration for background support
+    if (navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(notif.title || 'BD PM', options);
+      });
+    } else {
+      // Fallback: direct Notification API
+      try { new Notification(notif.title || 'BD PM', options); } catch(e) {}
+    }
+  };
+
   // Fetch DB Notifications
   useEffect(() => {
     if (currentUser && currentUser.id && currentUser.id !== 'admin-master') {
@@ -401,6 +446,9 @@ const App = () => {
               
               const merged = [...systemNotifs, ...dbNotifs].sort((a,b) => new Date(b.date) - new Date(a.date));
               
+              // Show native push for NEW unread notifications
+              dbNotifs.filter(n => !n.read).forEach(n => showNativePush(n));
+
               // Only trigger re-render if something actually changed to avoid infinite loops
               if (JSON.stringify(prev) !== JSON.stringify(merged)) {
                  return merged;

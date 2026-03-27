@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'icon-192x192.png', 'icon-512x512.png'],
+      includeAssets: ['favicon.png', 'icon-192x192.png', 'icon-512x512.png', 'sw-custom.js'],
       manifest: {
         name: 'BD Project Management',
         short_name: 'BD PM',
@@ -97,7 +97,8 @@ export default defineConfig({
               }
             }
           }
-        ]
+        ],
+        importScripts: ['sw-custom.js']
       }
     })
   ],
