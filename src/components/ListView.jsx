@@ -266,7 +266,7 @@ export const ListView = ({ tasks, users, subProjects, projects = [], onEditTask,
                                                         </td>
                                                         {canManageTasks && (
                                                             <td className="p-4 text-right">
-                                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <div className="flex justify-end gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                                     <button onClick={() => onEditTask(task)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md">
                                                                         <MoreVertical size={14} />
                                                                     </button>

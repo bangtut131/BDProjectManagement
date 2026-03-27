@@ -93,6 +93,52 @@ const App = () => {
   const [settingsInitialTab, setSettingsInitialTab] = useState('general'); // Added for tab remote control
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
+  // === Mobile Back Button Handler ===
+  // Push history state when navigating views or opening modals to prevent app exit on back press
+  useEffect(() => {
+    if (activeView !== 'dashboard') {
+      window.history.pushState({ view: activeView }, '');
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    const anyModalOpen = isModalOpen || isProjectModalOpen || isSettingsModalOpen || showNotifications || sidebarOpen;
+    if (anyModalOpen) {
+      window.history.pushState({ modal: true }, '');
+    }
+  }, [isModalOpen, isProjectModalOpen, isSettingsModalOpen, showNotifications, sidebarOpen]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      // Priority: close modals first, then navigate back to dashboard
+      if (isSettingsModalOpen) {
+        setIsSettingsModalOpen(false);
+      } else if (isModalOpen) {
+        setIsModalOpen(false);
+        setEditingTask(null);
+      } else if (isProjectModalOpen) {
+        setIsProjectModalOpen(false);
+      } else if (showNotifications) {
+        setShowNotifications(false);
+      } else if (sidebarOpen) {
+        setSidebarOpen(false);
+      } else if (activeView !== 'dashboard') {
+        setActiveView('dashboard');
+      } else {
+        // Already on dashboard with nothing open — push state to prevent exit
+        window.history.pushState({ root: true }, '');
+      }
+    };
+
+    // Push initial state so there's always something in history
+    if (window.history.state === null) {
+      window.history.pushState({ root: true }, '');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeView, isModalOpen, isProjectModalOpen, isSettingsModalOpen, showNotifications, sidebarOpen]);
+
   // Helper for Direct REST Fetch (Bypassing SDK)
   const fetchRest = async (table, queryParams = 'select=*') => {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/${table}?${queryParams}`;
