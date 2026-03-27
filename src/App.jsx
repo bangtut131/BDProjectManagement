@@ -562,11 +562,20 @@ const App = () => {
       // HANDLE PASSWORD UPDATE
       if (updatedUser.password) {
         if (currentUser?.id === updatedUser.id) {
+          // Self-update via Supabase Auth SDK
           const { error: pwError } = await supabase.auth.updateUser({ password: updatedUser.password });
           if (pwError) throw new Error(`Gagal update password: ${pwError.message}`);
           showNotification('Password berhasil diperbarui', 'success');
+        } else if (userPermissions.canManageTeam) {
+          // Admin/PM reset via RPC
+          const { error: rpcError } = await supabase.rpc('admin_reset_password', {
+            target_user_id: updatedUser.id,
+            new_password: updatedUser.password
+          });
+          if (rpcError) throw new Error(`Gagal reset password: ${rpcError.message}`);
+          showNotification(`Password ${updatedUser.name} berhasil direset`, 'success');
         } else {
-          alert('Demi keamanan, pengubahan password pengguna lain hanya boleh dilakukan oleh pengguna itu sendiri. (Atau gunakan fitur Reset Password via Email jika tersedia).');
+          alert('Anda tidak memiliki izin untuk mengubah password pengguna lain.');
         }
         // Do not include password in profile payload
       }
