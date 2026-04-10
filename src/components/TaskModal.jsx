@@ -268,7 +268,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                     <select
                                         className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                         value={formData.projectId}
-                                        onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                                        onChange={(e) => setFormData({ ...formData, projectId: Number(e.target.value) })}
                                         disabled={!!task}
                                     >
                                         {projects.map(p => (
