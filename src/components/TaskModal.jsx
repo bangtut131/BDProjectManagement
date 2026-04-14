@@ -133,6 +133,17 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
         setNewComment('');
     };
 
+    const handleDeleteComment = (commentId) => {
+        if (!confirm('Hapus komentar ini?')) return;
+        const updatedComments = formData.comments.filter(c => c.id !== commentId);
+        setFormData(prev => ({ ...prev, comments: updatedComments }));
+
+        // Real-time bypass save to database without closing modal
+        if (task && onQuickSave) {
+            onQuickSave(task.id, { comments: updatedComments });
+        }
+    };
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -443,14 +454,25 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                         formData.comments.map((comment, index) => {
                                             const user = users.find(u => u.id === comment.userId);
                                             return (
-                                                <div key={comment.id || index} className="flex gap-3">
+                                                <div key={comment.id || index} className="flex gap-3 group/comment">
                                                     <Avatar user={user} size="sm" />
                                                     <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg rounded-tl-none flex-1">
                                                         <div className="flex justify-between items-center mb-1">
                                                             <span className="text-sm font-bold text-slate-800 dark:text-white">{user?.name || 'Unknown'}</span>
-                                                            <span className="text-xs text-slate-400">{formatDate(comment.timestamp)}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-slate-400">{formatDate(comment.timestamp)}</span>
+                                                                {comment.userId === currentUser?.id && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteComment(comment.id)}
+                                                                        className="opacity-0 group-hover/comment:opacity-100 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                                                                        title="Hapus komentar"
+                                                                    >
+                                                                        <Trash size={13} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <p className="text-sm text-slate-600 dark:text-slate-300">{comment.text}</p>
+                                                        <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{comment.text}</p>
                                                     </div>
                                                 </div>
                                             );
@@ -463,17 +485,23 @@ export const TaskModal = ({ isOpen, onClose, onSave, onQuickSave, task = null, u
                                     )}
                                 </div>
                                 <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Tulis komentar..."
-                                        className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    <textarea
+                                        placeholder="Tulis komentar... (Shift+Enter untuk baris baru)"
+                                        className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
                                         value={newComment}
                                         onChange={(e) => setNewComment(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendComment();
+                                            }
+                                        }}
+                                        rows={2}
+                                        style={{ minHeight: '48px', maxHeight: '120px' }}
                                     />
                                     <button
                                         onClick={handleSendComment}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition"
+                                        className="absolute right-2 bottom-2 p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition"
                                     >
                                         <Send size={18} />
                                     </button>
