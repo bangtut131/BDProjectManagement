@@ -339,7 +339,10 @@ const App = () => {
 
       // 2.5 Load System Settings (WAHA, dll)
       try {
-        const settingsData = await safeFetch(() => fetchRest('system_settings', 'select=*'));
+        let settingsData = await safeFetch(() => fetchRest('bd_system_settings', 'select=*'));
+        if (!Array.isArray(settingsData)) {
+          settingsData = await safeFetch(() => fetchRest('system_settings', 'select=*'));
+        }
         if (Array.isArray(settingsData)) {
           const wahaRow = settingsData.find(s => s.key === 'waha');
           if (wahaRow && wahaRow.value) {
@@ -757,7 +760,7 @@ const App = () => {
 
   const handleUpdateWahaSettings = async (newConfig) => {
     try {
-      await mutateRest('system_settings', 'POST', {
+      await mutateRest('bd_system_settings', 'POST', {
         key: 'waha',
         value: newConfig,
         updated_at: new Date().toISOString()
