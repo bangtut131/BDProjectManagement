@@ -41,6 +41,7 @@ import { NotificationDropdown } from './components/NotificationDropdown';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginView } from './components/LoginView';
 import { supabase } from './lib/supabaseClient';
+import { dispatchWahaNotification } from './lib/wahaService';
 
 import logoBd from './assets/logo_bd.png';
 
@@ -91,6 +92,12 @@ const App = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('general'); // Added for tab remote control
+  const [wahaSettings, setWahaSettings] = useState({
+    enabled: false,
+    url: '',
+    apiKey: '',
+    session: 'default'
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
   // === Mobile Back Button Handler ===
@@ -329,6 +336,27 @@ const App = () => {
       })));
 
       if (rolesData.length > 0) setRoles(rolesData);
+
+      // 2.5 Load System Settings (WAHA, dll)
+      try {
+        const settingsData = await safeFetch(() => fetchRest('system_settings', 'select=*'));
+        if (Array.isArray(settingsData)) {
+          const wahaRow = settingsData.find(s => s.key === 'waha');
+          if (wahaRow && wahaRow.value) {
+            setWahaSettings(wahaRow.value);
+          }
+        } else {
+          const localWaha = localStorage.getItem('bd_pm_waha_settings');
+          if (localWaha) {
+            try { setWahaSettings(JSON.parse(localWaha)); } catch {}
+          }
+        }
+      } catch (e) {
+        const localWaha = localStorage.getItem('bd_pm_waha_settings');
+        if (localWaha) {
+          try { setWahaSettings(JSON.parse(localWaha)); } catch {}
+        }
+      }
 
       // 3. Finalize User State (Load AVATAR from Server Data)
       if (sessionUser) {
@@ -624,7 +652,8 @@ const App = () => {
       const profilePayload = {
         name: userData.name,
         role_id: roleId,
-        status: 'active'
+        status: 'active',
+        whatsapp: userData.whatsapp || null
       };
 
       await mutateRest('profiles', 'PATCH', profilePayload, `?id=eq.${newUserId}`);
@@ -636,7 +665,8 @@ const App = () => {
         role: foundRole ? foundRole.name : 'Staff Lain',
         status: 'active',
         avatar: null,
-        color: 'bg-indigo-500'
+        color: 'bg-indigo-500',
+        whatsapp: userData.whatsapp || null
       };
 
       // Refresh list
@@ -678,13 +708,14 @@ const App = () => {
         name: updatedUser.name,
         status: updatedUser.status,
         color: updatedUser.color,
-        avatar: updatedUser.avatar // <--- PERSIST AVATAR
+        avatar: updatedUser.avatar, // <--- PERSIST AVATAR
+        whatsapp: updatedUser.whatsapp !== undefined ? (updatedUser.whatsapp || null) : null
       };
 
       if (isValidId) payload.role_id = foundRole.id;
 
       await mutateRest('profiles', 'PATCH', payload, `?id=eq.${updatedUser.id}`);
-      setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+      setUsers(users.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
 
       // IMMEDIATE STATE UPDATE IF SELF
       if (currentUser && currentUser.id === updatedUser.id) {
@@ -721,6 +752,24 @@ const App = () => {
       } catch (error) {
         showNotification(`Gagal hapus anggota: ${error.message}`, 'error');
       }
+    }
+  };
+
+  const handleUpdateWahaSettings = async (newConfig) => {
+    try {
+      await mutateRest('system_settings', 'POST', {
+        key: 'waha',
+        value: newConfig,
+        updated_at: new Date().toISOString()
+      }, '?on_conflict=key');
+      setWahaSettings(newConfig);
+      localStorage.setItem('bd_pm_waha_settings', JSON.stringify(newConfig));
+      showNotification('Pengaturan WhatsApp (WAHA) berhasil disimpan', 'success');
+    } catch (err) {
+      console.warn('[WAHA] Failed to save in DB, saving to localStorage:', err.message);
+      setWahaSettings(newConfig);
+      localStorage.setItem('bd_pm_waha_settings', JSON.stringify(newConfig));
+      showNotification('Pengaturan WAHA disimpan di browser (jalankan migrasi SQL untuk database)', 'info');
     }
   };
 
@@ -926,6 +975,18 @@ const App = () => {
     const targetUserIds = [...new Set(userIds)].filter(id => id && id !== currentUser?.id);
     if (!targetUserIds.length) return;
 
+    // Resolve task and project details for richer WA message
+    let taskTitle = '';
+    let projectName = '';
+    if (taskId) {
+      const taskObj = tasks.find(t => t.id === taskId);
+      if (taskObj) {
+        taskTitle = taskObj.title || '';
+        const projObj = projects.find(p => p.id === taskObj.projectId);
+        if (projObj) projectName = projObj.name || '';
+      }
+    }
+
     // Use RPC function (SECURITY DEFINER) to bypass RLS
     for (const userId of targetUserIds) {
       try {
@@ -939,6 +1000,20 @@ const App = () => {
         if (error) console.error('[NOTIF] RPC error:', error.message);
       } catch (e) {
         console.error('[NOTIF] Exception:', e.message);
+      }
+
+      // Dispatch WhatsApp Notification via WAHA (if enabled and user has registered whatsapp number)
+      if (wahaSettings && wahaSettings.enabled && wahaSettings.url) {
+        const targetUser = users.find(u => u.id === userId);
+        if (targetUser && targetUser.whatsapp) {
+          dispatchWahaNotification(wahaSettings, targetUser.whatsapp, {
+            title,
+            message,
+            taskTitle,
+            projectName,
+            senderName: currentUser?.name || 'Seseorang'
+          }).catch(e => console.warn('[WAHA Dispatch Failed]:', e.message));
+        }
       }
     }
   };
@@ -1688,6 +1763,9 @@ const App = () => {
         onUpdateUser={handleUpdateUser}
         onDeleteUser={handleDeleteUser}
         initialTab={settingsInitialTab}
+        wahaSettings={wahaSettings}
+        onUpdateWahaSettings={handleUpdateWahaSettings}
+        currentUser={currentUser}
       />
 
       {/* Toast Notification */}

@@ -1,7 +1,8 @@
-import { X, Download, Upload, AlertTriangle, Database, Users, Shield, Plus, Trash2, Save } from 'lucide-react';
+import { X, Download, Upload, AlertTriangle, Database, Users, Shield, Plus, Trash2, Save, MessageSquare, Phone, CheckCircle, RefreshCw, Send, Check } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
+import { testWahaConnection } from '../lib/wahaService';
 
-export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, onImport, users, onAddUser, onUpdateUser, onDeleteUser, roles, onUpdateRoles, initialTab = 'general' }) => {
+export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, onImport, users, onAddUser, onUpdateUser, onDeleteUser, roles, onUpdateRoles, initialTab = 'general', wahaSettings, onUpdateWahaSettings, currentUser }) => {
     const fileInputRef = useRef(null);
     const [activeTab, setActiveTab] = useState(initialTab);
     const [error, setError] = useState(null);
@@ -15,10 +16,40 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
 
     // User Management State
     const [isAddingUser, setIsAddingUser] = useState(false);
-    const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Project Manager', status: 'active' });
+    const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Project Manager', status: 'active', whatsapp: '' });
 
     // Role Management State
     const [editingRoles, setEditingRoles] = useState([]);
+
+    // WAHA Settings State
+    const [wahaForm, setWahaForm] = useState({
+        enabled: false,
+        url: '',
+        apiKey: '',
+        session: 'default'
+    });
+    const [testPhone, setTestPhone] = useState('');
+    const [isTestingWaha, setIsTestingWaha] = useState(false);
+    const [testResult, setTestResult] = useState(null);
+    const [isSavingWaha, setIsSavingWaha] = useState(false);
+    const [saveWahaSuccess, setSaveWahaSuccess] = useState(false);
+
+    useEffect(() => {
+        if (wahaSettings) {
+            setWahaForm({
+                enabled: !!wahaSettings.enabled,
+                url: wahaSettings.url || '',
+                apiKey: wahaSettings.apiKey || '',
+                session: wahaSettings.session || 'default'
+            });
+        }
+    }, [wahaSettings, isOpen]);
+
+    useEffect(() => {
+        if (currentUser?.whatsapp && !testPhone) {
+            setTestPhone(currentUser.whatsapp);
+        }
+    }, [currentUser, isOpen]);
 
     useEffect(() => {
         if (roles) {
@@ -89,10 +120,57 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
             role: finalRole,
             email: finalEmail,
             avatar: null, // Default
-            color: 'bg-indigo-500' // Default
+            color: 'bg-indigo-500', // Default
+            whatsapp: newUser.whatsapp ? newUser.whatsapp.trim() : null
         });
         setIsAddingUser(false);
-        setNewUser({ name: '', email: '', role: 'Project Manager', status: 'active' });
+        setNewUser({ name: '', email: '', role: 'Project Manager', status: 'active', whatsapp: '' });
+    };
+
+    // --- WAHA Handlers ---
+    const handleSaveWaha = async () => {
+        setIsSavingWaha(true);
+        setSaveWahaSuccess(false);
+        setError(null);
+        try {
+            if (onUpdateWahaSettings) {
+                await onUpdateWahaSettings(wahaForm);
+                setSaveWahaSuccess(true);
+                setTimeout(() => setSaveWahaSuccess(false), 3000);
+            }
+        } catch (err) {
+            setError(err.message || 'Gagal menyimpan pengaturan WAHA');
+        } finally {
+            setIsSavingWaha(false);
+        }
+    };
+
+    const handleTestWaha = async () => {
+        if (!wahaForm.url) {
+            setTestResult({ type: 'error', message: 'URL WAHA harus diisi terlebih dahulu' });
+            return;
+        }
+        if (!testPhone) {
+            setTestResult({ type: 'error', message: 'Nomor WhatsApp tujuan tes harus diisi' });
+            return;
+        }
+
+        setIsTestingWaha(true);
+        setTestResult(null);
+        try {
+            await testWahaConnection(wahaForm, testPhone);
+            setTestResult({
+                type: 'success',
+                message: `Berhasil! Pesan tes telah terkirim ke ${testPhone}. Silakan cek WhatsApp Anda.`
+            });
+        } catch (err) {
+            setTestResult({
+                type: 'error',
+                message: `Gagal tes koneksi: ${err.message}`
+            });
+        } finally {
+            setIsTestingWaha(false);
+        }
     };
 
     // --- Role Handlers ---
@@ -179,6 +257,12 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
                         >
                             <Shield size={18} /> Role & Akses
                         </button>
+                        <button
+                            onClick={() => setActiveTab('whatsapp')}
+                            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition whitespace-nowrap ${activeTab === 'whatsapp' ? 'bg-white dark:bg-slate-800 shadow text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
+                        >
+                            <MessageSquare size={18} /> WhatsApp (WAHA)
+                        </button>
                     </div>
 
                     {/* Content Area */}
@@ -230,6 +314,7 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
                                             <select className="px-3 py-2 rounded border text-sm" value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
                                                 {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                                             </select>
+                                            <input type="text" placeholder="Nomor WhatsApp (cth: 08123456789)" className="col-span-2 px-3 py-2 rounded border text-sm" value={newUser.whatsapp || ''} onChange={e => setNewUser({ ...newUser, whatsapp: e.target.value })} />
                                         </div>
                                         <div className="flex justify-end gap-2">
                                             <button onClick={() => setIsAddingUser(false)} className="text-xs px-3 py-2 text-slate-500 hover:bg-slate-200 rounded">Batal</button>
@@ -247,7 +332,14 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-slate-800 dark:text-white">{u.name}</p>
-                                                    <p className="text-xs text-slate-500">{u.email} • {u.role}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {u.email} • {u.role}
+                                                        {u.whatsapp && (
+                                                            <span className="text-emerald-600 dark:text-emerald-400 ml-1 font-medium">
+                                                                • 📱 {u.whatsapp}
+                                                            </span>
+                                                        )}
+                                                    </p>
                                                 </div>
                                             </div>
                                             {(u.id !== 1 && u.email !== 'admin@bd.com') && (
@@ -311,6 +403,165 @@ export const SettingsModal = ({ isOpen, onClose, tasks, projects, subprojects, o
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'whatsapp' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                            <span className="p-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-lg">
+                                                <MessageSquare size={20} />
+                                            </span>
+                                            Integrasi WhatsApp (WAHA)
+                                        </h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            Kirim notifikasi otomatis ke WhatsApp anggota tim menggunakan WhatsApp HTTP API (WAHA).
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${wahaForm.enabled ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                                            {wahaForm.enabled ? '● Aktif' : '○ Nonaktif'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Form Kredensial WAHA */}
+                                <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700/60">
+                                        <div>
+                                            <label className="text-sm font-bold text-slate-800 dark:text-white block">Status Notifikasi WhatsApp</label>
+                                            <span className="text-xs text-slate-500">Aktifkan untuk mengirim pesan WA setiap ada notifikasi tugas/komentar</span>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={wahaForm.enabled}
+                                                onChange={(e) => setWahaForm({ ...wahaForm, enabled: e.target.checked })}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                            WAHA API URL <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Contoh: https://waha.domainanda.com"
+                                            value={wahaForm.url}
+                                            onChange={(e) => setWahaForm({ ...wahaForm, url: e.target.value })}
+                                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                        <p className="text-[11px] text-slate-400 mt-1">
+                                            URL instance WAHA Anda (Pastikan menggunakan HTTPS jika web BD PM ber-HTTPS).
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                                WAHA API Key (Opsional)
+                                            </label>
+                                            <input
+                                                type="password"
+                                                placeholder="Kosongkan jika tanpa API Key"
+                                                value={wahaForm.apiKey}
+                                                onChange={(e) => setWahaForm({ ...wahaForm, apiKey: e.target.value })}
+                                                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                            />
+                                            <p className="text-[11px] text-slate-400 mt-1">
+                                                Header X-Api-Key WAHA (jika dikonfigurasi).
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                                Session Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="default"
+                                                value={wahaForm.session}
+                                                onChange={(e) => setWahaForm({ ...wahaForm, session: e.target.value })}
+                                                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                            />
+                                            <p className="text-[11px] text-slate-400 mt-1">
+                                                Nama session WhatsApp yang sedang login (default: 'default').
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            onClick={handleSaveWaha}
+                                            disabled={isSavingWaha}
+                                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm disabled:opacity-50"
+                                        >
+                                            {saveWahaSuccess ? <Check size={16} /> : <Save size={16} />}
+                                            {isSavingWaha ? 'Menyimpan...' : saveWahaSuccess ? 'Tersimpan!' : 'Simpan Kredensial'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Card Uji Coba Koneksi */}
+                                <div className="border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 rounded-xl space-y-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 rounded-lg shrink-0 mt-0.5">
+                                            <Send size={18} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-slate-800 dark:text-white">Tes Koneksi & Kirim Pesan Percobaan</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                Pastikan WAHA sudah login (QR code terhubung) lalu masukkan nomor WA Anda untuk menguji pengiriman.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="relative flex-1">
+                                            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Nomor WA Anda (cth: 081234567890)"
+                                                value={testPhone}
+                                                onChange={(e) => setTestPhone(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleTestWaha}
+                                            disabled={isTestingWaha || !wahaForm.url}
+                                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm disabled:opacity-50 whitespace-nowrap"
+                                        >
+                                            {isTestingWaha ? (
+                                                <>
+                                                    <RefreshCw size={16} className="animate-spin" />
+                                                    Mengirim...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send size={16} />
+                                                    Kirim Pesan Tes
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {testResult && (
+                                        <div className={`p-3.5 rounded-lg text-xs flex items-start gap-2 animate-in fade-in ${testResult.type === 'success' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800' : 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'}`}>
+                                            {testResult.type === 'success' ? (
+                                                <CheckCircle size={16} className="shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                                            ) : (
+                                                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+                                            )}
+                                            <span>{testResult.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

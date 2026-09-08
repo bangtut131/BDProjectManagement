@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, X, User, Briefcase, Mail, Shield, Check, UserPlus, Camera, Loader2 } from 'lucide-react';
+import { Plus, Trash2, X, User, Briefcase, Mail, Shield, Check, UserPlus, Camera, Loader2, Phone } from 'lucide-react';
 import { Card } from './Card';
 import { Avatar } from './Avatar';
 // import { supabase } from '../lib/supabaseClient'; // REMOVED SDK
@@ -20,7 +20,8 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
         email: '',
         password: '',
         color: 'bg-indigo-500',
-        avatar: ''
+        avatar: '',
+        whatsapp: ''
     });
     const [uploading, setUploading] = useState(false);
     const [avatarUploadingId, setAvatarUploadingId] = useState(null);
@@ -63,7 +64,7 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
 
     const openAddModal = () => {
         setEditingUser(null);
-        setFormData({ name: '', username: '', role: roles[0]?.name || '', email: '', password: '', color: 'bg-indigo-500' });
+        setFormData({ name: '', username: '', role: roles[0]?.name || '', email: '', password: '', color: 'bg-indigo-500', whatsapp: '' });
         setChangePassword(true); // Always required for new users
         setIsModalOpen(true);
     };
@@ -82,7 +83,8 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
             email: user.email || '',
             password: '', // Reset password field for security
             color: user.color,
-            avatar: user.avatar
+            avatar: user.avatar,
+            whatsapp: user.whatsapp || ''
         });
         setChangePassword(false); // Default to unchecked
         setIsModalOpen(true);
@@ -93,17 +95,19 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
 
         const initials = formData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
+        const userPayload = {
+            ...formData,
+            whatsapp: formData.whatsapp ? formData.whatsapp.trim() : null,
+            avatar: formData.avatar || initials
+        };
+
         if (editingUser) {
             onUpdateUser({
                 ...editingUser,
-                ...formData,
-                avatar: formData.avatar || initials
+                ...userPayload
             });
         } else {
-            onAddUser({
-                ...formData,
-                avatar: formData.avatar || initials
-            });
+            onAddUser(userPayload);
         }
 
         setIsModalOpen(false);
@@ -343,7 +347,13 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white">{user.name}</h3>
                             <p className="text-xs text-slate-400 mb-1">@{user.username || user.email?.split('@')[0]}</p>
-                            <p className="text-indigo-600 dark:text-indigo-400 font-medium mb-4">{user.role}</p>
+                            <p className="text-indigo-600 dark:text-indigo-400 font-medium mb-2">{user.role}</p>
+                            {user.whatsapp && (
+                                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full mb-3">
+                                    <Phone size={12} />
+                                    <span>{user.whatsapp}</span>
+                                </div>
+                            )}
 
                             <div className="w-full pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between text-sm text-slate-500">
                                 <div className="flex flex-col">
@@ -531,11 +541,26 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
                                     />
                                 </div>
+                            </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nomor WhatsApp</label>
+                                <div className="relative">
+                                    <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        placeholder="Contoh: 081234567890"
+                                        value={formData.whatsapp || ''}
+                                        onChange={e => setFormData({ ...formData, whatsapp: e.target.value })}
+                                    />
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-1">Notifikasi tugas akan dikirimkan otomatis ke WhatsApp ini.</p>
+                            </div>
 
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400">Password</label>
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400">Password</label>
                                         {editingUser && (
                                             <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-600">
                                                 <input
@@ -580,7 +605,6 @@ export const TeamView = ({ users, currentUser, roles, onUpdateRoles, onAddUser, 
                                 <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition">Batal</button>
                                 <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">{editingUser ? 'Simpan Perubahan' : 'Tambah Anggota'}</button>
                             </div>
-                        </div>
                     </div>
                 </div>
             )}
