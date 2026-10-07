@@ -409,17 +409,27 @@ const App = () => {
     }
   }, []);
 
-  // Request Notification Permission after login
+  // Request Notification Permission after login (safely handled for iOS/Safari)
   useEffect(() => {
-    if (currentUser && currentUser.id !== 'admin-master' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        // Small delay so UI loads first before showing permission dialog
-        const timer = setTimeout(() => {
-          Notification.requestPermission().then(perm => {
-            console.log('[PUSH] Notification permission:', perm);
-          });
-        }, 3000);
-        return () => clearTimeout(timer);
+    if (typeof window === 'undefined' || !('Notification' in window) || !window.Notification) return;
+
+    if (currentUser && currentUser.id !== 'admin-master') {
+      try {
+        if (window.Notification.permission === 'default') {
+          // Note: Safari and iOS require an explicit user gesture (tap/click),
+          // so automated requestPermission in a timer may be blocked or throw NotAllowedError.
+          // We wrap in a safe async call that will never crash the application.
+          const req = window.Notification.requestPermission();
+          if (req && typeof req.then === 'function') {
+            req.then(perm => {
+              console.log('[PUSH] Notification permission:', perm);
+            }).catch(e => {
+              console.warn('[PUSH] Permission request ignored or requires user gesture:', e);
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[PUSH] Automatic notification request not supported:', err);
       }
     }
   }, [currentUser]);
@@ -427,30 +437,52 @@ const App = () => {
   // Track which notification IDs we've already shown as native push
   const shownPushIds = useRef(new Set());
 
-  // Show native notification for new unread items
+  // Show native notification for new unread items safely across all devices
   const showNativePush = (notif) => {
-    if (Notification.permission !== 'granted') return;
-    if (shownPushIds.current.has(notif.id)) return;
-    shownPushIds.current.add(notif.id);
+    try {
+      if (typeof window === 'undefined') return;
+      // Guard: Check if Notification API exists in window (prevents ReferenceError on iOS Safari)
+      if (!('Notification' in window) || !window.Notification) return;
+      if (window.Notification.permission !== 'granted') return;
+      if (!notif || !notif.id || shownPushIds.current.has(notif.id)) return;
+      shownPushIds.current.add(notif.id);
 
-    const options = {
-      body: notif.message || notif.title,
-      icon: '/icon-192x192.png',
-      badge: '/icon-96x96.png',
-      tag: `bdpm-notif-${notif.id}`,
-      data: { taskId: notif.taskId, notifId: notif.id },
-      vibrate: [200, 100, 200],
-      requireInteraction: false
-    };
+      const options = {
+        body: notif.message || notif.title || '',
+        icon: '/icon-192x192.png',
+        badge: '/icon-96x96.png',
+        tag: `bdpm-notif-${notif.id}`,
+        data: { taskId: notif.taskId, notifId: notif.id }
+      };
 
-    // Use ServiceWorker registration for background support
-    if (navigator.serviceWorker?.controller) {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification(notif.title || 'BD PM', options);
-      });
-    } else {
-      // Fallback: direct Notification API
-      try { new Notification(notif.title || 'BD PM', options); } catch(e) {}
+      // Vibrate only if supported (WebKit does not support vibrate)
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        options.vibrate = [200, 100, 200];
+      }
+
+      // Use ServiceWorker registration for background support (required on iOS PWA)
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready
+          .then(reg => {
+            if (reg && typeof reg.showNotification === 'function') {
+              reg.showNotification(notif.title || 'BD PM', options).catch(err => {
+                console.warn('[PUSH] SW showNotification error:', err);
+              });
+            }
+          })
+          .catch(err => {
+            console.warn('[PUSH] SW ready error:', err);
+          });
+      } else {
+        // Fallback: direct Notification constructor (only works on browsers supporting it)
+        try {
+          new window.Notification(notif.title || 'BD PM', options);
+        } catch (e) {
+          // Expected on iOS Safari where Notification constructor is not allowed
+        }
+      }
+    } catch (err) {
+      console.warn('[PUSH] Error in showNativePush:', err);
     }
   };
 
@@ -461,24 +493,28 @@ const App = () => {
         try {
           const data = await fetchRest('notifications', `select=*&user_id=eq.${currentUser.id}&order=created_at.desc&limit=50`);
           if (data && Array.isArray(data)) {
+            const dbNotifs = data.map(d => ({
+              id: d.id,
+              type: d.type || 'info',
+              title: d.title,
+              message: d.message,
+              date: d.created_at,
+              read: d.is_read,
+              taskId: d.task_id,
+              isDb: true // Flag to know which ones to update in DB
+            }));
+
+            // Show native push for NEW unread notifications safely outside state updater
+            try {
+              dbNotifs.filter(n => !n.read).forEach(n => showNativePush(n));
+            } catch (err) {
+              console.warn('[PUSH] Error dispatching push notifications:', err);
+            }
+
             setNotifications(prev => {
               // Keep system notifications (which have string IDs like 'overdue-123')
               const systemNotifs = prev.filter(n => typeof n.id === 'string');
-              const dbNotifs = data.map(d => ({
-                id: d.id,
-                type: d.type || 'info',
-                title: d.title,
-                message: d.message,
-                date: d.created_at,
-                read: d.is_read,
-                taskId: d.task_id,
-                isDb: true // Flag to know which ones to update in DB
-              }));
-              
               const merged = [...systemNotifs, ...dbNotifs].sort((a,b) => new Date(b.date) - new Date(a.date));
-              
-              // Show native push for NEW unread notifications
-              dbNotifs.filter(n => !n.read).forEach(n => showNativePush(n));
 
               // Only trigger re-render if something actually changed to avoid infinite loops
               if (JSON.stringify(prev) !== JSON.stringify(merged)) {
