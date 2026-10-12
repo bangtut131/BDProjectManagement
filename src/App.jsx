@@ -695,7 +695,16 @@ const App = () => {
         whatsapp: userData.whatsapp || null
       };
 
-      await mutateRest('profiles', 'PATCH', profilePayload, `?id=eq.${newUserId}`);
+      try {
+        await mutateRest('profiles', 'PATCH', profilePayload, `?id=eq.${newUserId}`);
+      } catch (patchErr) {
+        if (patchErr.message && patchErr.message.toLowerCase().includes('whatsapp')) {
+          delete profilePayload.whatsapp;
+          await mutateRest('profiles', 'PATCH', profilePayload, `?id=eq.${newUserId}`);
+        } else {
+          throw patchErr;
+        }
+      }
 
       const newUserObj = {
         id: newUserId,
@@ -753,7 +762,21 @@ const App = () => {
 
       if (isValidId) payload.role_id = foundRole.id;
 
-      await mutateRest('profiles', 'PATCH', payload, `?id=eq.${updatedUser.id}`);
+      try {
+        await mutateRest('profiles', 'PATCH', payload, `?id=eq.${updatedUser.id}`);
+      } catch (patchErr) {
+        // Fallback jika kolom whatsapp belum dibuat di Supabase SQL Editor
+        if (patchErr.message && patchErr.message.toLowerCase().includes('whatsapp')) {
+          const { whatsapp, ...payloadWithoutWa } = payload;
+          await mutateRest('profiles', 'PATCH', payloadWithoutWa, `?id=eq.${updatedUser.id}`);
+          setUsers(users.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser, whatsapp: null } : u));
+          if (currentUser && currentUser.id === updatedUser.id) {
+            setCurrentUser(prev => ({ ...prev, ...updatedUser, whatsapp: null }));
+          }
+          return showNotification('Profil disimpan, namun nomor WA belum tersimpan karena kolom "whatsapp" belum dibuat di Supabase. Silakan jalankan script SQL migrasi.', 'warning');
+        }
+        throw patchErr;
+      }
       setUsers(users.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
 
       // IMMEDIATE STATE UPDATE IF SELF
@@ -796,11 +819,22 @@ const App = () => {
 
   const handleUpdateWahaSettings = async (newConfig) => {
     try {
-      await mutateRest('bd_system_settings', 'POST', {
-        key: 'waha',
+      // Use PATCH to reliably update existing row (key='waha' always exists after migration)
+      // Falls back to POST (upsert) if PATCH finds no row to update
+      const patchResult = await mutateRest('bd_system_settings', 'PATCH', {
         value: newConfig,
         updated_at: new Date().toISOString()
-      }, '?on_conflict=key');
+      }, '?key=eq.waha');
+
+      // If PATCH returned empty array, row didn't exist yet — use POST to insert
+      if (Array.isArray(patchResult) && patchResult.length === 0) {
+        await mutateRest('bd_system_settings', 'POST', {
+          key: 'waha',
+          value: newConfig,
+          updated_at: new Date().toISOString()
+        }, '');
+      }
+
       setWahaSettings(newConfig);
       localStorage.setItem('bd_pm_waha_settings', JSON.stringify(newConfig));
       showNotification('Pengaturan WhatsApp (WAHA) berhasil disimpan', 'success');
